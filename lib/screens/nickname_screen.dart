@@ -50,38 +50,49 @@ class _NicknameScreenState extends ConsumerState<NicknameScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.rocket_launch,
-                size: 64,
-                color: AppColors.accent,
+              // Logo area
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Icon(
+                  Icons.rocket_launch,
+                  size: 36,
+                  color: AppColors.accent,
+                ),
               ),
               const SizedBox(height: 24),
               const Text(
                 '스타트업 한 입',
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                '매일 하나씩, 스타트업 용어 마스터',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+              const SizedBox(height: 6),
+              Text(
+                'STARTUP BITE // ODYSSEY VENTURES',
+                style: AppTextStyles.label,
               ),
               const SizedBox(height: 48),
-              GlassContainer(
+              FrameContainer(
+                label: 'INITIALIZE',
                 child: Column(
                   children: [
-                    const Text(
-                      '닉네임을 입력해주세요',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '닉네임을 입력해주세요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -90,7 +101,7 @@ class _NicknameScreenState extends ConsumerState<NicknameScreen> {
                       style: const TextStyle(color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         hintText: '닉네임 (2~10자)',
-                        hintStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(color: AppColors.textMuted),
                       ),
                       maxLength: 10,
                       onChanged: (value) {

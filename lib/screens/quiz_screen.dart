@@ -47,38 +47,35 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
-            child: GlassContainer(
+            child: FrameContainer(
+              label: 'QUIZ // LOCKED',
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.quiz, size: 48, color: AppColors.accent),
+                  const Icon(Icons.lock_outline, size: 36, color: AppColors.textMuted),
                   const SizedBox(height: 16),
                   const Text(
                     '퀴즈 모드',
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '용어를 ${AppConstants.quizMinTerms}개 이상 학습하면\n퀴즈에 도전할 수 있어요!',
+                    '용어를 ${AppConstants.quizMinTerms}개 이상 학습하면\n퀴즈에 도전할 수 있어요',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       color: AppColors.textSecondary,
                       height: 1.5,
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '현재 $current / ${AppConstants.quizMinTerms}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.accent,
-                    ),
+                    '$current / ${AppConstants.quizMinTerms}',
+                    style: AppTextStyles.labelColored(AppColors.accent).copyWith(fontSize: 14),
                   ),
                 ],
               ),
@@ -95,26 +92,27 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
-            child: GlassContainer(
+            child: FrameContainer(
+              label: 'QUIZ // READY',
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.quiz, size: 48, color: AppColors.accent),
+                  const Icon(Icons.play_arrow_rounded, size: 40, color: AppColors.accent),
                   const SizedBox(height: 16),
                   const Text(
                     '퀴즈 모드',
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '학습한 ${progress.completedTermIds.length}개 용어 중\n최대 ${AppConstants.quizQuestionCount}문제가 출제됩니다.',
+                    '학습한 ${progress.completedTermIds.length}개 용어 중\n최대 ${AppConstants.quizQuestionCount}문제가 출제됩니다',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       color: AppColors.textSecondary,
                       height: 1.5,
                     ),
@@ -150,23 +148,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${quizState.currentIndex + 1} / ${quizState.totalQuestions}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
+                    'Q${quizState.currentIndex + 1} / ${quizState.totalQuestions}',
+                    style: AppTextStyles.labelBright.copyWith(fontSize: 12),
                   ),
                   Text(
-                    '${quizState.correctCount}개 정답',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.success,
-                    ),
+                    '${quizState.correctCount} CORRECT',
+                    style: AppTextStyles.labelColored(AppColors.success).copyWith(fontSize: 11),
                   ),
                 ],
               ),
@@ -176,15 +168,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                     quizState.totalQuestions,
                 progressColor: AppColors.accent,
               ),
-              const SizedBox(height: 24),
-              GlassContainer(
+              const SizedBox(height: 20),
+              // Question
+              FrameContainer(
+                label: question.questionBody.isEmpty ? 'QUESTION' : 'QUESTION // ${question.term.termKo}',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       question.questionText,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -194,7 +188,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       Text(
                         question.questionBody,
                         style: const TextStyle(
-                          fontSize: 15,
+                          fontSize: 14,
                           color: AppColors.textSecondary,
                           height: 1.5,
                         ),
@@ -203,7 +197,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              // Options
               Expanded(
                 child: ListView.builder(
                   itemCount: question.options.length,
@@ -214,9 +209,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       selectedAnswer: quizState.selectedAnswer,
                       correctIndex: question.correctIndex,
                       onTap: () {
-                        ref
-                            .read(quizProvider.notifier)
-                            .submitAnswer(index);
+                        ref.read(quizProvider.notifier).submitAnswer(index);
                       },
                     );
                   },
@@ -253,42 +246,36 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
-            child: GlassContainer(
+            child: FrameContainer(
+              label: 'RESULT // ${(accuracy * 100).toInt()}%',
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    '퀴즈 완료!',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
                   CircularPercentIndicator(
-                    radius: 70,
-                    lineWidth: 10,
+                    radius: 60,
+                    lineWidth: 6,
                     percent: accuracy,
                     center: Text(
                       '${(accuracy * 100).toInt()}%',
                       style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     progressColor:
                         accuracy >= 0.7 ? AppColors.success : AppColors.warning,
                     backgroundColor: AppColors.cardBorder,
-                    circularStrokeCap: CircularStrokeCap.round,
+                    circularStrokeCap: CircularStrokeCap.butt,
                     animation: true,
                   ),
                   const SizedBox(height: 20),
                   Text(
                     '${quizState.correctCount} / ${quizState.totalQuestions} 정답',
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       color: AppColors.textSecondary,
                     ),
                   ),

@@ -18,42 +18,37 @@ class LeaderboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          '리더보드',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
+        title: const Text('LEADERBOARD'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SafeArea(
         child: !SupabaseService.isAvailable
-            ? const Center(
+            ? Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: GlassContainer(
+                  padding: const EdgeInsets.all(32),
+                  child: FrameContainer(
+                    label: 'STATUS // OFFLINE',
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.cloud_off,
-                            size: 48, color: AppColors.textSecondary),
-                        SizedBox(height: 16),
-                        Text(
+                        const Icon(Icons.cloud_off,
+                            size: 36, color: AppColors.textMuted),
+                        const SizedBox(height: 16),
+                        const Text(
                           '리더보드를 사용할 수 없습니다',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          'Supabase 설정이 필요합니다.',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
+                          'SUPABASE CONNECTION REQUIRED',
+                          style: AppTextStyles.label,
                         ),
                       ],
                     ),
@@ -73,23 +68,19 @@ class LeaderboardScreen extends ConsumerWidget {
                         if (rank == null) return const SizedBox();
                         return Padding(
                           padding: const EdgeInsets.all(16),
-                          child: GlassContainer(
+                          child: FrameContainer(
+                            label: 'MY RANK',
                             borderColor: AppColors.accent,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.emoji_events,
-                                    color: AppColors.accent),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '내 순위: $rank위',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.accent,
-                                  ),
+                            child: Center(
+                              child: Text(
+                                '#$rank',
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.accent,
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         );
@@ -97,38 +88,31 @@ class LeaderboardScreen extends ConsumerWidget {
                       loading: () => const SizedBox(),
                       error: (_, _) => const SizedBox(),
                     ),
-                    // Leaderboard list
+                    // List
                     Expanded(
                       child: leaderboard.when(
                         data: (entries) {
                           if (entries.isEmpty) {
-                            return const Center(
-                              child: Text(
-                                '아직 랭킹이 없습니다',
-                                style: TextStyle(
-                                    color: AppColors.textSecondary),
-                              ),
+                            return Center(
+                              child: Text('NO ENTRIES', style: AppTextStyles.label),
                             );
                           }
                           return ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: entries.length,
                             itemBuilder: (context, index) {
                               final entry = entries[index];
-                              final isMe =
-                                  entry['device_id'] == myDeviceId;
-                              return _buildRankTile(
-                                  index + 1, entry, isMe);
+                              final isMe = entry['device_id'] == myDeviceId;
+                              return _buildRankTile(index + 1, entry, isMe);
                             },
                           );
                         },
-                        loading: () => const Center(
-                            child: CircularProgressIndicator()),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
                         error: (e, _) => Center(
-                          child: Text('불러오기 실패: $e',
-                              style: const TextStyle(
-                                  color: AppColors.error)),
+                          child: Text('ERROR: $e',
+                              style: AppTextStyles.label
+                                  .copyWith(color: AppColors.error)),
                         ),
                       ),
                     ),
@@ -139,65 +123,59 @@ class LeaderboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRankTile(
-      int rank, Map<String, dynamic> entry, bool isMe) {
+  Widget _buildRankTile(int rank, Map<String, dynamic> entry, bool isMe) {
     final Color rankColor;
-    final IconData? rankIcon;
     if (rank == 1) {
       rankColor = const Color(0xFFFFD700);
-      rankIcon = Icons.emoji_events;
     } else if (rank == 2) {
       rankColor = const Color(0xFFC0C0C0);
-      rankIcon = Icons.emoji_events;
     } else if (rank == 3) {
       rankColor = const Color(0xFFCD7F32);
-      rankIcon = Icons.emoji_events;
     } else {
-      rankColor = AppColors.textSecondary;
-      rankIcon = null;
+      rankColor = AppColors.textMuted;
     }
 
-    return Card(
-      color: isMe
-          ? AppColors.accent.withValues(alpha: 0.15)
-          : AppColors.cardBackground,
-      margin: const EdgeInsets.only(bottom: 8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: isMe ? AppColors.accent.withValues(alpha: 0.5) : AppColors.cardBorder,
+        ),
+        borderRadius: BorderRadius.circular(4),
+        color: isMe ? AppColors.accent.withValues(alpha: 0.05) : AppColors.cardBackground,
+      ),
       child: ListTile(
+        dense: true,
         leading: SizedBox(
-          width: 40,
-          child: rankIcon != null
-              ? Icon(rankIcon, color: rankColor, size: 28)
-              : Center(
-                  child: Text(
-                    '$rank',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: rankColor,
-                    ),
-                  ),
-                ),
+          width: 32,
+          child: Text(
+            '#$rank',
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: rankColor,
+            ),
+          ),
         ),
         title: Text(
           entry['nickname'] ?? '???',
           style: TextStyle(
-            fontSize: 15,
-            fontWeight: isMe ? FontWeight.bold : FontWeight.w500,
+            fontSize: 14,
+            fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
             color: isMe ? AppColors.accent : AppColors.textPrimary,
           ),
         ),
         subtitle: Text(
-          '퀴즈 ${entry['quiz_count'] ?? 0}회',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          'QUIZ ${entry['quiz_count'] ?? 0}',
+          style: AppTextStyles.label.copyWith(fontSize: 9),
         ),
         trailing: Text(
-          '${entry['total_score'] ?? 0}점',
+          '${entry['total_score'] ?? 0}',
           style: TextStyle(
+            fontFamily: 'monospace',
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
             color: isMe ? AppColors.accent : AppColors.textPrimary,
           ),
         ),

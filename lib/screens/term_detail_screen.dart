@@ -17,15 +17,9 @@ class TermDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          term.termKo,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: Text(term.termKo),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -40,24 +34,23 @@ class TermDetailScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               if (isCompleted)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 12),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.success.withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle,
-                          color: AppColors.success, size: 20),
-                      SizedBox(width: 8),
+                      const Icon(Icons.check,
+                          color: AppColors.success, size: 16),
+                      const SizedBox(width: 8),
                       Text(
-                        '학습 완료',
-                        style: TextStyle(
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        'COMPLETED',
+                        style: AppTextStyles.labelColored(AppColors.success)
+                            .copyWith(fontSize: 11),
                       ),
                     ],
                   ),
@@ -66,37 +59,31 @@ class TermDetailScreen extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: ElevatedButton(
                         onPressed: () {
                           ref
                               .read(progressProvider.notifier)
                               .markCompleted(term.id);
                         },
-                        icon: const Icon(Icons.check, size: 18),
-                        label: const Text('이해했어요'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
                         ),
+                        child: const Text('이해했어요'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: OutlinedButton.icon(
+                      child: OutlinedButton(
                         onPressed: () {
                           ref
                               .read(progressProvider.notifier)
                               .markForReview(term.id);
                         },
-                        icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('다시 볼래요'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.warning,
                           side: const BorderSide(color: AppColors.warning),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
+                        child: const Text('다시 볼래요'),
                       ),
                     ),
                   ],

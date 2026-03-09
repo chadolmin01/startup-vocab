@@ -1,23 +1,31 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const background = Color(0xFF1A1A2E);
-  static const cardBackground = Color(0xFF16213E);
-  static const cardBorder = Color(0xFF1F3460);
-  static const surface = Color(0xFF0F3460);
-  static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFFB0B0C0);
-  static const accent = Color(0xFF6C5CE7);
-  static const success = Color(0xFF00B894);
-  static const error = Color(0xFFE17055);
-  static const warning = Color(0xFFFDCB6E);
+  // Cosmic dark palette
+  static const background = Color(0xFF0A0A0F);
+  static const cardBackground = Color(0xFF12121A);
+  static const cardBorder = Color(0xFF1E1E2E);
+  static const surface = Color(0xFF16161F);
+  static const textPrimary = Color(0xFFF0F0F0);
+  static const textSecondary = Color(0xFF6B6B80);
+  static const textMuted = Color(0xFF3A3A4A);
 
+  // Accent - cosmic blue-violet
+  static const accent = Color(0xFF7B68EE);
+  static const accentDim = Color(0xFF4A3CB0);
+
+  // Status
+  static const success = Color(0xFF34D399);
+  static const error = Color(0xFFEF4444);
+  static const warning = Color(0xFFFBBF24);
+
+  // Category colors - slightly muted for dark theme
   static const Map<String, Color> categoryColors = {
-    'Start': Color(0xFF6C5CE7),
-    'Build': Color(0xFF0984E3),
-    'Scale': Color(0xFF00B894),
-    'Invest': Color(0xFFFDCB6E),
-    'Final': Color(0xFFE17055),
+    'Start': Color(0xFF8B7CF6),  // violet
+    'Build': Color(0xFF3B82F6),  // blue
+    'Scale': Color(0xFF34D399),  // emerald
+    'Invest': Color(0xFFFBBF24), // amber
+    'Final': Color(0xFFF97316),  // orange
   };
 
   static Color getCategoryColor(String category) {
@@ -46,9 +54,36 @@ class AppConstants {
   static const int quizMinTerms = 4;
   static const int quizQuestionCount = 10;
   static const int leaderboardTopN = 20;
-  static const double cardBorderRadius = 20.0;
+  static const double cardBorderRadius = 4.0; // sharp corners
   static const Duration flipDuration = Duration(milliseconds: 300);
 
   static const String supabaseUrl = 'https://kqevvmzxaatpjzfyecul.supabase.co';
   static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZXZ2bXp4YWF0cGp6ZnllY3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzg5NTAsImV4cCI6MjA4ODYxNDk1MH0.DLRNGQDC3t3pzh-QyuvINQTj5q6Sk9ZJL5xBsSejf0Y';
+}
+
+/// Technical label text style - mono, uppercase, tracking
+class AppTextStyles {
+  static const label = TextStyle(
+    fontFamily: 'monospace',
+    fontSize: 10,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 1.5,
+    color: AppColors.textSecondary,
+  );
+
+  static const labelBright = TextStyle(
+    fontFamily: 'monospace',
+    fontSize: 10,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 1.5,
+    color: AppColors.textPrimary,
+  );
+
+  static TextStyle labelColored(Color color) => TextStyle(
+    fontFamily: 'monospace',
+    fontSize: 10,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 1.5,
+    color: color,
+  );
 }

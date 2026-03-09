@@ -8,25 +8,27 @@ class CategoryBadge extends StatelessWidget {
   const CategoryBadge({
     super.key,
     required this.category,
-    this.fontSize = 12,
+    this.fontSize = 10,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = AppColors.getCategoryColor(category);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
-        category,
+        category.toUpperCase(),
         style: TextStyle(
+          fontFamily: 'monospace',
           color: color,
           fontSize: fontSize,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
         ),
       ),
     );

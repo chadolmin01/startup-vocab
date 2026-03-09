@@ -27,55 +27,58 @@ class HomeScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Day $dayNumber',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DAY $dayNumber',
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.accent,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            '오늘의 스타트업 용어',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ],
                       ),
                       StreakCounter(streak: progress.streak),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '오늘의 스타트업 용어',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
                   const SizedBox(height: 16),
+                  // Card
                   Expanded(
                     child: TermCard(term: term),
                   ),
                   const SizedBox(height: 16),
+                  // Actions
                   if (isCompleted)
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: AppColors.success.withValues(alpha: 0.3)),
+                        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle,
-                              color: AppColors.success, size: 20),
-                          SizedBox(width: 8),
+                          const Icon(Icons.check, color: AppColors.success, size: 16),
+                          const SizedBox(width: 8),
                           Text(
-                            '오늘의 학습을 완료했어요!',
-                            style: TextStyle(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            'COMPLETED',
+                            style: AppTextStyles.labelColored(AppColors.success).copyWith(fontSize: 11),
                           ),
                         ],
                       ),
@@ -84,37 +87,31 @@ class HomeScreen extends ConsumerWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton.icon(
+                          child: ElevatedButton(
                             onPressed: () {
                               ref
                                   .read(progressProvider.notifier)
                                   .markCompleted(term.id);
                             },
-                            icon: const Icon(Icons.check, size: 18),
-                            label: const Text('이해했어요'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.success,
                             ),
+                            child: const Text('이해했어요'),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: OutlinedButton.icon(
+                          child: OutlinedButton(
                             onPressed: () {
                               ref
                                   .read(progressProvider.notifier)
                                   .markForReview(term.id);
                             },
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: const Text('다시 볼래요'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.warning,
                               side: const BorderSide(color: AppColors.warning),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
+                            child: const Text('다시 볼래요'),
                           ),
                         ),
                       ],
@@ -125,8 +122,8 @@ class HomeScreen extends ConsumerWidget {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(
-            child: Text('용어를 불러올 수 없습니다: $e',
-                style: const TextStyle(color: AppColors.error)),
+            child: Text('ERROR: $e',
+                style: AppTextStyles.label.copyWith(color: AppColors.error)),
           ),
         ),
       ),

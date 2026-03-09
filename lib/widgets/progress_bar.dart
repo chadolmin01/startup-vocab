@@ -13,7 +13,7 @@ class ProgressBar extends StatelessWidget {
     required this.percent,
     this.label,
     this.progressColor,
-    this.height = 10,
+    this.height = 4,
   });
 
   @override
@@ -23,11 +23,8 @@ class ProgressBar extends StatelessWidget {
       children: [
         if (label != null) ...[
           Text(
-            label!,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            label!.toUpperCase(),
+            style: AppTextStyles.label,
           ),
           const SizedBox(height: 6),
         ],
@@ -37,9 +34,9 @@ class ProgressBar extends StatelessWidget {
           percent: percent.clamp(0.0, 1.0),
           backgroundColor: AppColors.cardBorder,
           progressColor: progressColor ?? AppColors.accent,
-          barRadius: Radius.circular(height / 2),
+          barRadius: const Radius.circular(0), // sharp edges
           animation: true,
-          animationDuration: 500,
+          animationDuration: 400,
         ),
       ],
     );

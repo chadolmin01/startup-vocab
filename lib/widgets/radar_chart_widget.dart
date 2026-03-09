@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 
 class RadarChartWidget extends StatelessWidget {
-  final Map<String, double> categoryProgress; // 0.0 ~ 1.0
+  final Map<String, double> categoryProgress;
 
   const RadarChartWidget({super.key, required this.categoryProgress});
 
@@ -21,27 +21,30 @@ class RadarChartWidget extends StatelessWidget {
           tickCount: 4,
           ticksTextStyle: const TextStyle(fontSize: 0),
           tickBorderData:
-              BorderSide(color: AppColors.cardBorder.withValues(alpha: 0.3)),
+              BorderSide(color: AppColors.cardBorder.withValues(alpha: 0.4)),
           gridBorderData:
-              BorderSide(color: AppColors.cardBorder.withValues(alpha: 0.5), width: 1),
+              BorderSide(color: AppColors.cardBorder.withValues(alpha: 0.6), width: 1),
           radarBorderData:
               const BorderSide(color: Colors.transparent),
           titlePositionPercentageOffset: 0.2,
           titleTextStyle: const TextStyle(
-            fontSize: 12,
+            fontFamily: 'monospace',
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1,
             color: AppColors.textSecondary,
           ),
           getTitle: (index, _) {
             return RadarChartTitle(
-              text: categories[index],
+              text: categories[index].toUpperCase(),
             );
           },
           dataSets: [
             RadarDataSet(
-              fillColor: AppColors.accent.withValues(alpha: 0.2),
+              fillColor: AppColors.accent.withValues(alpha: 0.15),
               borderColor: AppColors.accent,
-              borderWidth: 2,
-              entryRadius: 3,
+              borderWidth: 1.5,
+              entryRadius: 2,
               dataEntries: values
                   .map((v) => RadarEntry(value: v * 100))
                   .toList(),

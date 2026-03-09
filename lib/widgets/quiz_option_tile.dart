@@ -25,89 +25,75 @@ class QuizOptionTile extends StatelessWidget {
 
     Color backgroundColor = AppColors.cardBackground;
     Color borderColor = AppColors.cardBorder;
-    IconData? trailingIcon;
+    Color indexColor = AppColors.textMuted;
 
     if (hasAnswered) {
       if (isCorrect) {
-        backgroundColor = AppColors.success.withValues(alpha: 0.15);
+        backgroundColor = AppColors.success.withValues(alpha: 0.08);
         borderColor = AppColors.success;
-        trailingIcon = Icons.check_circle;
+        indexColor = AppColors.success;
       } else if (isSelected && !isCorrect) {
-        backgroundColor = AppColors.error.withValues(alpha: 0.15);
+        backgroundColor = AppColors.error.withValues(alpha: 0.08);
         borderColor = AppColors.error;
-        trailingIcon = Icons.cancel;
+        indexColor = AppColors.error;
       }
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: hasAnswered ? null : onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: backgroundColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: borderColor),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: hasAnswered && isCorrect
-                            ? AppColors.success
-                            : hasAnswered && isSelected
-                                ? AppColors.error
-                                : AppColors.textSecondary,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        String.fromCharCode(65 + index), // A, B, C, D
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: hasAnswered && isCorrect
-                              ? AppColors.success
-                              : hasAnswered && isSelected
-                                  ? AppColors.error
-                                  : AppColors.textSecondary,
-                        ),
-                      ),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: hasAnswered ? null : onTap,
+          borderRadius: BorderRadius.circular(4),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  child: Text(
+                    String.fromCharCode(65 + index),
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: indexColor,
+                      letterSpacing: 1,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      text,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: hasAnswered && isCorrect
-                            ? AppColors.success
-                            : hasAnswered && isSelected
-                                ? AppColors.error
-                                : AppColors.textPrimary,
-                        height: 1.4,
-                      ),
+                ),
+                Container(
+                  width: 1,
+                  height: 20,
+                  color: AppColors.cardBorder,
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: hasAnswered && isCorrect
+                          ? AppColors.success
+                          : hasAnswered && isSelected
+                              ? AppColors.error
+                              : AppColors.textPrimary,
+                      height: 1.4,
                     ),
                   ),
-                  if (trailingIcon != null)
-                    Icon(
-                      trailingIcon,
-                      color: isCorrect ? AppColors.success : AppColors.error,
-                      size: 22,
-                    ),
-                ],
-              ),
+                ),
+                if (hasAnswered && isCorrect)
+                  const Icon(Icons.check, color: AppColors.success, size: 18),
+                if (hasAnswered && isSelected && !isCorrect)
+                  const Icon(Icons.close, color: AppColors.error, size: 18),
+              ],
             ),
           ),
         ),

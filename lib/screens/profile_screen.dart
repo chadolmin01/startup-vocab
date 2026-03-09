@@ -48,15 +48,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               // Header
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppColors.accent,
-                    child: Text(
-                      nickname.isNotEmpty ? nickname[0] : '?',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+                      borderRadius: BorderRadius.circular(4),
+                      color: AppColors.accent.withValues(alpha: 0.1),
+                    ),
+                    child: Center(
+                      child: Text(
+                        nickname.isNotEmpty ? nickname[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.accent,
+                        ),
                       ),
                     ),
                   ),
@@ -70,69 +77,63 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             Text(
                               nickname,
                               style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.edit,
-                                  size: 16, color: AppColors.textSecondary),
-                              onPressed: () => _editNickname(prefs, nickname),
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () => _editNickname(prefs, nickname),
+                              child: const Icon(Icons.edit,
+                                  size: 14, color: AppColors.textMuted),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 2),
                         Text(
-                          'Odyssey Ventures',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary.withValues(alpha: 0.7),
-                          ),
+                          'ODYSSEY VENTURES',
+                          style: AppTextStyles.label,
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // Dashboard stats
-              GlassContainer(
-                child: Column(
+              // Stats
+              FrameContainer(
+                label: 'DASHBOARD',
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _statItem(
-                          icon: Icons.local_fire_department,
-                          value: '${progress.streak}일',
-                          label: '연속 학습',
-                          color: AppColors.warning,
-                        ),
-                        _statItem(
-                          icon: Icons.book,
-                          value: '${progress.totalCompleted}',
-                          label: '학습 용어',
-                          color: AppColors.success,
-                        ),
-                        _statItem(
-                          icon: Icons.quiz,
-                          value:
-                              '${(progress.averageQuizAccuracy * 100).toInt()}%',
-                          label: '퀴즈 정답률',
-                          color: AppColors.accent,
-                        ),
-                      ],
+                    _statItem(
+                      value: '${progress.streak}D',
+                      label: 'STREAK',
+                      color: AppColors.warning,
+                    ),
+                    Container(width: 1, height: 40, color: AppColors.cardBorder),
+                    _statItem(
+                      value: '${progress.totalCompleted}',
+                      label: 'LEARNED',
+                      color: AppColors.success,
+                    ),
+                    Container(width: 1, height: 40, color: AppColors.cardBorder),
+                    _statItem(
+                      value: '${(progress.averageQuizAccuracy * 100).toInt()}%',
+                      label: 'ACCURACY',
+                      color: AppColors.accent,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Leaderboard button
+              // Leaderboard
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -140,29 +141,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.leaderboard, size: 18),
-                  label: const Text('리더보드'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.accent,
                     side: const BorderSide(color: AppColors.accent),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
+                  child: const Text('LEADERBOARD'),
                 ),
               ),
               const SizedBox(height: 24),
 
               // Radar chart
-              const Text(
-                '카테고리별 학습 현황',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              Text('CATEGORY PROGRESS', style: AppTextStyles.labelBright),
               const SizedBox(height: 12),
               termsAsync.when(
                 data: (terms) {
@@ -170,7 +159,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _calculateCategoryProgress(terms, progress);
                   return Column(
                     children: [
-                      GlassContainer(
+                      FrameContainer(
                         child: RadarChartWidget(
                             categoryProgress: categoryProgress),
                       ),
@@ -186,7 +175,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 progress.completedTermIds.contains(t.id))
                             .length;
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 10),
                           child: Column(
                             children: [
                               Row(
@@ -194,19 +183,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    e.key,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: color,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    e.key.toUpperCase(),
+                                    style: AppTextStyles.labelColored(color),
                                   ),
                                   Text(
                                     '$completed / $termCount',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
+                                    style: AppTextStyles.label.copyWith(fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -214,7 +196,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ProgressBar(
                                 percent: e.value,
                                 progressColor: color,
-                                height: 8,
+                                height: 3,
                               ),
                             ],
                           ),
@@ -234,29 +216,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(height: 24),
 
               // Settings
-              const Text(
-                '설정',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              Text('SETTINGS', style: AppTextStyles.labelBright),
               const SizedBox(height: 12),
-              GlassContainer(
+              FrameContainer(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Column(
                   children: [
                     SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
                       title: const Text(
                         '학습 리마인더 알림',
                         style: TextStyle(
-                            fontSize: 14, color: AppColors.textPrimary),
+                            fontSize: 13, color: AppColors.textPrimary),
                       ),
-                      subtitle: const Text(
-                        '매일 오전 9시 알림',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary),
+                      subtitle: Text(
+                        'DAILY 09:00',
+                        style: AppTextStyles.label.copyWith(fontSize: 9),
                       ),
                       value: _notificationsEnabled,
                       activeTrackColor: AppColors.accent,
@@ -275,21 +250,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: () => _confirmReset(),
-                  icon: const Icon(Icons.restart_alt, size: 18),
-                  label: const Text('학습 리셋'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: const BorderSide(color: AppColors.error),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
+                  child: const Text('학습 리셋'),
                 ),
               ),
               const SizedBox(height: 32),
@@ -301,30 +271,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _statItem({
-    required IconData icon,
     required String value,
     required String label,
     required Color color,
   }) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 28),
-        const SizedBox(height: 8),
         Text(
           value,
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontFamily: 'monospace',
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
             color: color,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: AppTextStyles.label.copyWith(fontSize: 9),
         ),
       ],
     );
@@ -357,14 +322,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '다시 볼래요',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        Text('REVIEW LIST', style: AppTextStyles.labelColored(AppColors.warning)),
         const SizedBox(height: 12),
         termsAsync.when(
           data: (terms) {
@@ -373,28 +331,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 .toList();
             return Column(
               children: reviewTerms.map((term) {
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.cardBorder),
+                    borderRadius: BorderRadius.circular(4),
+                    color: AppColors.cardBackground,
+                  ),
                   child: ListTile(
-                    leading: Icon(
-                      Icons.refresh,
-                      color: AppColors.warning,
-                      size: 20,
-                    ),
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
                     title: Text(
                       term.termKo,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     subtitle: Text(
                       term.termEn,
                       style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        color: AppColors.textMuted,
                       ),
                     ),
+                    trailing: const Icon(Icons.chevron_right,
+                        color: AppColors.textMuted, size: 16),
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -419,8 +382,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        title: const Text('닉네임 수정'),
+        title: const Text('닉네임 수정', style: TextStyle(fontSize: 16)),
         content: TextField(
           controller: controller,
           maxLength: 10,
@@ -453,11 +415,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        title: const Text('학습 리셋'),
+        title: const Text('학습 리셋', style: TextStyle(fontSize: 16)),
         content: const Text(
           '모든 학습 기록이 초기화됩니다.\n계속하시겠습니까?',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         actions: [
           TextButton(
