@@ -1,38 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/term.dart';
 import '../models/study_progress.dart';
 import '../providers/progress_provider.dart';
 import '../providers/terms_provider.dart';
-import '../services/notification_service.dart';
 import '../utils/constants.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/radar_chart_widget.dart';
 import '../widgets/progress_bar.dart';
 import 'leaderboard_screen.dart';
+import 'settings_screen.dart';
 import 'term_detail_screen.dart';
 
-class ProfileScreen extends ConsumerStatefulWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  late bool _notificationsEnabled;
-
-  @override
-  void initState() {
-    super.initState();
-    final prefs = ref.read(sharedPreferencesProvider);
-    _notificationsEnabled =
-        prefs.getBool(SPKeys.notificationEnabled) ?? true;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(progressProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
     final nickname = prefs.getString(SPKeys.nickname) ?? '사용자';
@@ -41,7 +25,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(Spacing.screenPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -52,55 +36,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
-                      borderRadius: BorderRadius.circular(4),
-                      color: AppColors.accent.withValues(alpha: 0.1),
+                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
+                      borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+                      color: AppColors.accent.withValues(alpha: 0.08),
                     ),
                     child: Center(
                       child: Text(
                         nickname.isNotEmpty ? nickname[0].toUpperCase() : '?',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.accent,
-                        ),
+                        style: AppTextStyles.h2.copyWith(color: AppColors.accent),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Spacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              nickname,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            GestureDetector(
-                              onTap: () => _editNickname(prefs, nickname),
-                              child: const Icon(Icons.edit,
-                                  size: 14, color: AppColors.textMuted),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'ODYSSEY VENTURES',
-                          style: AppTextStyles.label,
-                        ),
+                        Text(nickname, style: AppTextStyles.h3),
+                        Text('ODYSSEY VENTURES', style: AppTextStyles.label),
                       ],
                     ),
                   ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.settings_outlined, size: 20),
+                    color: AppColors.textMuted,
+                  ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: Spacing.lg),
 
               // Stats
               FrameContainer(
@@ -128,7 +98,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Spacing.md),
 
               // Leaderboard
               SizedBox(
@@ -148,11 +118,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: const Text('LEADERBOARD'),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: Spacing.xl),
 
               // Radar chart
               Text('CATEGORY PROGRESS', style: AppTextStyles.labelBright),
-              const SizedBox(height: 12),
+              const SizedBox(height: Spacing.md),
               termsAsync.when(
                 data: (terms) {
                   final categoryProgress =
@@ -163,7 +133,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: RadarChartWidget(
                             categoryProgress: categoryProgress),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Spacing.lg),
                       ...categoryProgress.entries.map((e) {
                         final color = AppColors.getCategoryColor(e.key);
                         final termCount = terms
@@ -175,7 +145,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 progress.completedTermIds.contains(t.id))
                             .length;
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.only(bottom: Spacing.md),
                           child: Column(
                             children: [
                               Row(
@@ -188,15 +158,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                   Text(
                                     '$completed / $termCount',
-                                    style: AppTextStyles.label.copyWith(fontSize: 11),
+                                    style: AppTextStyles.label,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: Spacing.xs),
                               ProgressBar(
                                 percent: e.value,
                                 progressColor: color,
-                                height: 3,
                               ),
                             ],
                           ),
@@ -209,60 +178,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) => const SizedBox(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: Spacing.xl),
 
               // Review terms
-              _buildReviewSection(termsAsync, progress),
-              const SizedBox(height: 24),
-
-              // Settings
-              Text('SETTINGS', style: AppTextStyles.labelBright),
-              const SizedBox(height: 12),
-              FrameContainer(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text(
-                        '학습 리마인더 알림',
-                        style: TextStyle(
-                            fontSize: 13, color: AppColors.textPrimary),
-                      ),
-                      subtitle: Text(
-                        'DAILY 09:00',
-                        style: AppTextStyles.label.copyWith(fontSize: 9),
-                      ),
-                      value: _notificationsEnabled,
-                      activeTrackColor: AppColors.accent,
-                      onChanged: (value) async {
-                        setState(() => _notificationsEnabled = value);
-                        await prefs.setBool(
-                            SPKeys.notificationEnabled, value);
-                        if (value) {
-                          await NotificationService.requestPermission();
-                          await NotificationService.scheduleDailyReminder();
-                        } else {
-                          await NotificationService.cancelAll();
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => _confirmReset(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                  ),
-                  child: const Text('학습 리셋'),
-                ),
-              ),
-              const SizedBox(height: 32),
+              _buildReviewSection(context, termsAsync, progress),
+              const SizedBox(height: Spacing.xxl),
             ],
           ),
         ),
@@ -277,20 +197,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }) {
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: AppTextStyles.label.copyWith(fontSize: 9),
-        ),
+        Text(value, style: AppTextStyles.stat.copyWith(color: color)),
+        const SizedBox(height: Spacing.xs),
+        Text(label, style: AppTextStyles.label),
       ],
     );
   }
@@ -315,7 +224,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return result;
   }
 
-  Widget _buildReviewSection(
+  Widget _buildReviewSection(BuildContext context,
       AsyncValue<List<Term>> termsAsync, StudyProgress progress) {
     if (progress.reviewTermIds.isEmpty) return const SizedBox();
 
@@ -323,7 +232,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('REVIEW LIST', style: AppTextStyles.labelColored(AppColors.warning)),
-        const SizedBox(height: 12),
+        const SizedBox(height: Spacing.md),
         termsAsync.when(
           data: (terms) {
             final reviewTerms = terms
@@ -332,32 +241,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             return Column(
               children: reviewTerms.map((term) {
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 4),
+                  margin: const EdgeInsets.only(bottom: 6),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.cardBorder),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
                     color: AppColors.cardBackground,
                   ),
                   child: ListTile(
                     dense: true,
                     visualDensity: VisualDensity.compact,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.lg,
+                      vertical: Spacing.xs,
+                    ),
                     title: Text(
                       term.termKo,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    subtitle: Text(
-                      term.termEn,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
+                    subtitle: Text(term.termEn, style: AppTextStyles.mono),
                     trailing: const Icon(Icons.chevron_right,
-                        color: AppColors.textMuted, size: 16),
+                        color: AppColors.textMuted, size: 18),
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -377,64 +280,4 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  void _editNickname(SharedPreferences prefs, String current) {
-    final controller = TextEditingController(text: current);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('닉네임 수정', style: TextStyle(fontSize: 16)),
-        content: TextField(
-          controller: controller,
-          maxLength: 10,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: const InputDecoration(hintText: '새 닉네임'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newName = controller.text.trim();
-              if (newName.length >= 2) {
-                await prefs.setString(SPKeys.nickname, newName);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              }
-            },
-            child: const Text('저장'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmReset() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('학습 리셋', style: TextStyle(fontSize: 16)),
-        content: const Text(
-          '모든 학습 기록이 초기화됩니다.\n계속하시겠습니까?',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(progressProvider.notifier).resetProgress();
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('리셋'),
-          ),
-        ],
-      ),
-    );
-  }
 }

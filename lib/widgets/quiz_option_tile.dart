@@ -23,68 +23,73 @@ class QuizOptionTile extends StatelessWidget {
     final isCorrect = index == correctIndex;
     final hasAnswered = selectedAnswer != null;
 
-    Color backgroundColor = AppColors.cardBackground;
     Color borderColor = AppColors.cardBorder;
+    Color textColor = AppColors.textPrimary;
+    Color bgColor = AppColors.cardBackground;
     Color indexColor = AppColors.textMuted;
 
     if (hasAnswered) {
       if (isCorrect) {
-        backgroundColor = AppColors.success.withValues(alpha: 0.08);
         borderColor = AppColors.success;
+        textColor = AppColors.success;
+        bgColor = AppColors.success.withValues(alpha: 0.08);
         indexColor = AppColors.success;
-      } else if (isSelected && !isCorrect) {
-        backgroundColor = AppColors.error.withValues(alpha: 0.08);
-        borderColor = AppColors.error;
+      } else if (isSelected) {
+        borderColor = AppColors.error.withValues(alpha: 0.5);
+        textColor = AppColors.error;
+        bgColor = AppColors.error.withValues(alpha: 0.05);
         indexColor = AppColors.error;
+      } else {
+        textColor = AppColors.textMuted;
       }
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: Spacing.sm),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: hasAnswered ? null : onTap,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.lg,
+              vertical: Spacing.md,
+            ),
             decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(4),
               border: Border.all(color: borderColor),
+              borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+              color: bgColor,
             ),
             child: Row(
               children: [
-                SizedBox(
+                Container(
                   width: 24,
-                  child: Text(
-                    String.fromCharCode(65 + index),
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: indexColor,
-                      letterSpacing: 1,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: indexColor),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Center(
+                    child: Text(
+                      String.fromCharCode(65 + index),
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: indexColor,
+                      ),
                     ),
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 20,
-                  color: AppColors.cardBorder,
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                ),
+                const SizedBox(width: Spacing.md),
                 Expanded(
                   child: Text(
                     text,
                     style: TextStyle(
-                      fontSize: 13,
-                      color: hasAnswered && isCorrect
-                          ? AppColors.success
-                          : hasAnswered && isSelected
-                              ? AppColors.error
-                              : AppColors.textPrimary,
+                      fontSize: 14,
+                      color: textColor,
                       height: 1.4,
                     ),
                   ),

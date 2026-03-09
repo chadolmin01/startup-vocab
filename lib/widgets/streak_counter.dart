@@ -9,38 +9,38 @@ class StreakCounter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = streak > 0;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.sm,
+        vertical: Spacing.xs,
+      ),
       decoration: BoxDecoration(
         border: Border.all(
-          color: isActive ? AppColors.warning.withValues(alpha: 0.4) : AppColors.cardBorder,
+          color: isActive
+              ? AppColors.warning.withValues(alpha: 0.4)
+              : AppColors.cardBorder,
         ),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+        color: isActive ? AppColors.warning.withValues(alpha: 0.08) : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'STREAK',
-            style: AppTextStyles.label.copyWith(
-              color: isActive ? AppColors.warning : AppColors.textMuted,
-              fontSize: 9,
-            ),
+          Icon(
+            Icons.local_fire_department,
+            size: 14,
+            color: isActive ? AppColors.warning : AppColors.textMuted,
           ),
-          const SizedBox(width: 6),
-          Container(
-            width: 1,
-            height: 12,
-            color: AppColors.cardBorder,
-          ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Spacing.xs),
           Text(
             '${streak}D',
             style: TextStyle(
               fontFamily: 'monospace',
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
               color: isActive ? AppColors.warning : AppColors.textMuted,
+              letterSpacing: 1,
             ),
           ),
         ],

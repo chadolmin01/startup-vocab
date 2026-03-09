@@ -27,7 +27,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         progress.completedTermIds.length >= AppConstants.quizMinTerms;
 
     if (!canTakeQuiz) {
-      return _buildNotEnoughTerms(progress.completedTermIds.length);
+      return _buildNotEnoughTerms(progress);
     }
 
     if (!_started) {
@@ -41,45 +41,48 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     return _buildQuizQuestion(quizState);
   }
 
-  Widget _buildNotEnoughTerms(int current) {
+  Widget _buildNotEnoughTerms(StudyProgress progress) {
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: FrameContainer(
-              label: 'QUIZ // LOCKED',
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.lock_outline, size: 36, color: AppColors.textMuted),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '퀴즈 모드',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.screenPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('QUIZ', style: AppTextStyles.labelColored(AppColors.accent)),
+              const SizedBox(height: Spacing.xs),
+              const Text('퀴즈 모드', style: AppTextStyles.h2),
+              const SizedBox(height: Spacing.lg),
+              Expanded(
+                child: FrameContainer(
+                  label: 'STATUS // LOCKED',
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.lock_outline, size: 32, color: AppColors.textMuted),
+                        const SizedBox(height: Spacing.lg),
+                        Text(
+                          '용어를 ${AppConstants.quizMinTerms}개 이상 학습하면\n퀴즈에 도전할 수 있어요',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.bodySecondary,
+                        ),
+                        const SizedBox(height: Spacing.xl),
+                        Text(
+                          '${progress.completedTermIds.length} / ${AppConstants.quizMinTerms}',
+                          style: AppTextStyles.stat.copyWith(color: AppColors.accent),
+                        ),
+                        const SizedBox(height: Spacing.sm),
+                        ProgressBar(
+                          percent: progress.completedTermIds.length / AppConstants.quizMinTerms,
+                          progressColor: AppColors.accent,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '용어를 ${AppConstants.quizMinTerms}개 이상 학습하면\n퀴즈에 도전할 수 있어요',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '$current / ${AppConstants.quizMinTerms}',
-                    style: AppTextStyles.labelColored(AppColors.accent).copyWith(fontSize: 14),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -87,50 +90,76 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   }
 
   Widget _buildStartScreen(StudyProgress progress) {
+    final hasWrongTerms = progress.wrongTermIds.isNotEmpty;
+
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: FrameContainer(
-              label: 'QUIZ // READY',
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.play_arrow_rounded, size: 40, color: AppColors.accent),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '퀴즈 모드',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.screenPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('QUIZ', style: AppTextStyles.labelColored(AppColors.accent)),
+              const SizedBox(height: Spacing.xs),
+              const Text('퀴즈 모드', style: AppTextStyles.h2),
+              const SizedBox(height: Spacing.lg),
+              Expanded(
+                child: FrameContainer(
+                  label: 'STATUS // READY',
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.play_arrow_rounded, size: 36, color: AppColors.accent),
+                        const SizedBox(height: Spacing.lg),
+                        Text(
+                          '학습한 ${progress.completedTermIds.length}개 용어 중\n최대 ${AppConstants.quizQuestionCount}문제가 출제됩니다',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.bodySecondary,
+                        ),
+                        if (hasWrongTerms) ...[
+                          const SizedBox(height: Spacing.md),
+                          Text(
+                            '오답 용어 ${progress.wrongTermIds.length}개',
+                            style: AppTextStyles.labelColored(AppColors.error),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '학습한 ${progress.completedTermIds.length}개 용어 중\n최대 ${AppConstants.quizQuestionCount}문제가 출제됩니다',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ref.read(quizProvider.notifier).generateQuiz();
-                        setState(() => _started = true);
-                      },
-                      child: const Text('퀴즈 시작'),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: Spacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(quizProvider.notifier).generateQuiz();
+                    setState(() => _started = true);
+                  },
+                  child: const Text('퀴즈 시작'),
+                ),
+              ),
+              if (hasWrongTerms) ...[
+                const SizedBox(height: Spacing.sm),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      ref.read(quizProvider.notifier).generateQuiz(
+                            mode: QuizMode.wrongOnly,
+                          );
+                      setState(() => _started = true);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                    ),
+                    child: const Text('오답 노트 퀴즈'),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -144,7 +173,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(Spacing.screenPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -154,50 +183,38 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 children: [
                   Text(
                     'Q${quizState.currentIndex + 1} / ${quizState.totalQuestions}',
-                    style: AppTextStyles.labelBright.copyWith(fontSize: 12),
+                    style: AppTextStyles.labelBright,
                   ),
                   Text(
                     '${quizState.correctCount} CORRECT',
-                    style: AppTextStyles.labelColored(AppColors.success).copyWith(fontSize: 11),
+                    style: AppTextStyles.labelColored(AppColors.success),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: Spacing.sm),
               ProgressBar(
                 percent: (quizState.currentIndex + 1) /
                     quizState.totalQuestions,
                 progressColor: AppColors.accent,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: Spacing.lg),
               // Question
               FrameContainer(
-                label: question.questionBody.isEmpty ? 'QUESTION' : 'QUESTION // ${question.term.termKo}',
+                label: question.questionBody.isEmpty
+                    ? 'QUESTION'
+                    : 'QUESTION // ${question.term.termKo}',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      question.questionText,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+                    Text(question.questionText, style: AppTextStyles.h3),
                     if (question.questionBody.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        question.questionBody,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
+                      const SizedBox(height: Spacing.md),
+                      Text(question.questionBody, style: AppTextStyles.bodySecondary),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.lg),
               // Options
               Expanded(
                 child: ListView.builder(
@@ -240,59 +257,61 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final accuracy = quizState.totalQuestions > 0
         ? quizState.correctCount / quizState.totalQuestions
         : 0.0;
+    final resultColor = accuracy >= 0.7 ? AppColors.success : AppColors.warning;
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: FrameContainer(
-              label: 'RESULT // ${(accuracy * 100).toInt()}%',
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 8),
-                  CircularPercentIndicator(
-                    radius: 60,
-                    lineWidth: 6,
-                    percent: accuracy,
-                    center: Text(
-                      '${(accuracy * 100).toInt()}%',
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    progressColor:
-                        accuracy >= 0.7 ? AppColors.success : AppColors.warning,
-                    backgroundColor: AppColors.cardBorder,
-                    circularStrokeCap: CircularStrokeCap.butt,
-                    animation: true,
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    '${quizState.correctCount} / ${quizState.totalQuestions} 정답',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ref.read(quizProvider.notifier).reset();
-                        setState(() => _started = false);
-                      },
-                      child: const Text('다시 도전'),
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.screenPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('QUIZ', style: AppTextStyles.labelColored(AppColors.accent)),
+              const SizedBox(height: Spacing.xs),
+              const Text('퀴즈 결과', style: AppTextStyles.h2),
+              const SizedBox(height: Spacing.lg),
+              Expanded(
+                child: FrameContainer(
+                  label: 'RESULT // ${(accuracy * 100).toInt()}%',
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularPercentIndicator(
+                          radius: 56,
+                          lineWidth: 6,
+                          percent: accuracy,
+                          center: Text(
+                            '${(accuracy * 100).toInt()}%',
+                            style: AppTextStyles.stat.copyWith(color: resultColor),
+                          ),
+                          progressColor: resultColor,
+                          backgroundColor: AppColors.cardBorder,
+                          circularStrokeCap: CircularStrokeCap.round,
+                          animation: true,
+                        ),
+                        const SizedBox(height: Spacing.lg),
+                        Text(
+                          '${quizState.correctCount} / ${quizState.totalQuestions} 정답',
+                          style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: Spacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(quizProvider.notifier).reset();
+                    setState(() => _started = false);
+                  },
+                  child: const Text('다시 도전'),
+                ),
+              ),
+            ],
           ),
         ),
       ),

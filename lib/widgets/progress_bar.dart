@@ -22,11 +22,8 @@ class ProgressBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (label != null) ...[
-          Text(
-            label!.toUpperCase(),
-            style: AppTextStyles.label,
-          ),
-          const SizedBox(height: 6),
+          Text(label!.toUpperCase(), style: AppTextStyles.label),
+          const SizedBox(height: Spacing.xs),
         ],
         LinearPercentIndicator(
           padding: EdgeInsets.zero,
@@ -34,7 +31,7 @@ class ProgressBar extends StatelessWidget {
           percent: percent.clamp(0.0, 1.0),
           backgroundColor: AppColors.cardBorder,
           progressColor: progressColor ?? AppColors.accent,
-          barRadius: const Radius.circular(0), // sharp edges
+          barRadius: const Radius.circular(2),
           animation: true,
           animationDuration: 400,
         ),

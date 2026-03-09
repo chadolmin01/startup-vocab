@@ -25,32 +25,32 @@ class TermDetailScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(Spacing.screenPadding),
           child: Column(
             children: [
               Expanded(
                 child: TermCard(term: term),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.lg),
               if (isCompleted)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: Spacing.md),
                   decoration: BoxDecoration(
                     border: Border.all(
                         color: AppColors.success.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+                    color: AppColors.success.withValues(alpha: 0.05),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.check,
                           color: AppColors.success, size: 16),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Spacing.sm),
                       Text(
                         'COMPLETED',
-                        style: AppTextStyles.labelColored(AppColors.success)
-                            .copyWith(fontSize: 11),
+                        style: AppTextStyles.labelColored(AppColors.success),
                       ),
                     ],
                   ),
@@ -67,11 +67,12 @@ class TermDetailScreen extends ConsumerWidget {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
+                          foregroundColor: Colors.black,
                         ),
                         child: const Text('이해했어요'),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Spacing.sm),
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {

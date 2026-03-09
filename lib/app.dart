@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/progress_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/quiz_screen.dart';
+import 'screens/review_screen.dart';
 import 'screens/dictionary_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/nickname_screen.dart';
+import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
 
@@ -14,9 +16,6 @@ class StartupBiteApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final hasNickname = prefs.getString(SPKeys.nickname) != null;
-
     return MaterialApp(
       title: '스타트업 한 입',
       debugShowCheckedModeBanner: false,
@@ -24,8 +23,35 @@ class StartupBiteApp extends ConsumerWidget {
       routes: {
         '/main': (_) => const MainShell(),
       },
-      home: hasNickname ? const MainShell() : const NicknameScreen(),
+      home: const _SplashGate(),
     );
+  }
+}
+
+/// Shows splash → then routes to nickname or main
+class _SplashGate extends ConsumerStatefulWidget {
+  const _SplashGate();
+
+  @override
+  ConsumerState<_SplashGate> createState() => _SplashGateState();
+}
+
+class _SplashGateState extends ConsumerState<_SplashGate> {
+  bool _splashDone = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_splashDone) {
+      return SplashScreen(
+        onComplete: () {
+          if (mounted) setState(() => _splashDone = true);
+        },
+      );
+    }
+
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final hasNickname = prefs.getString(SPKeys.nickname) != null;
+    return hasNickname ? const MainShell() : const NicknameScreen();
   }
 }
 
@@ -42,6 +68,7 @@ class _MainShellState extends State<MainShell> {
   final _screens = const [
     HomeScreen(),
     QuizScreen(),
+    ReviewScreen(),
     DictionaryScreen(),
     ProfileScreen(),
   ];
@@ -59,11 +86,15 @@ class _MainShellState extends State<MainShell> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_rounded),
-            label: '오늘의 용어',
+            label: '학습',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.quiz_rounded),
             label: '퀴즈',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.replay_rounded),
+            label: '복습',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book_rounded),

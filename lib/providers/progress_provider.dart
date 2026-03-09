@@ -24,12 +24,31 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     _loadFromPrefs();
   }
 
+  static String _todayStr() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
   void _loadFromPrefs() {
     final completedIds = _prefs.getStringList(SPKeys.completedTermIds) ?? [];
     final reviewIds = _prefs.getStringList(SPKeys.reviewTermIds) ?? [];
     final quizJson = _prefs.getStringList(SPKeys.quizHistory) ?? [];
     final streak = _prefs.getInt(SPKeys.streak) ?? 0;
     final lastStudyStr = _prefs.getString(SPKeys.lastStudyDate);
+    final dailyGoal = _prefs.getInt(SPKeys.dailyGoal) ?? 5;
+    final savedTodayDate = _prefs.getString(SPKeys.todayDate) ?? '';
+    final savedTodayCount = _prefs.getInt(SPKeys.todayLearnedCount) ?? 0;
+    final wrongIds = _prefs.getStringList(SPKeys.wrongTermIds) ?? [];
+
+    // Load confidence map
+    final confStr = _prefs.getString(SPKeys.termConfidence);
+    final Map<int, int> confidence = {};
+    if (confStr != null) {
+      final decoded = json.decode(confStr) as Map<String, dynamic>;
+      for (final entry in decoded.entries) {
+        confidence[int.parse(entry.key)] = entry.value as int;
+      }
+    }
 
     final lastStudy =
         lastStudyStr != null ? DateTime.tryParse(lastStudyStr) : null;
@@ -47,15 +66,24 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
 
     final validStreak = AppDateUtils.calculateStreak(lastStudy, streak);
 
+    // Reset daily count if date changed
+    final today = _todayStr();
+    final todayCount = savedTodayDate == today ? savedTodayCount : 0;
+
     state = StudyProgress(
       completedTermIds: completedIds.map(int.parse).toSet(),
       reviewTermIds: reviewIds.map(int.parse).toSet(),
       quizHistory: quizHistory,
       streak: validStreak,
       lastStudyDate: lastStudy,
+      dailyGoal: dailyGoal,
+      todayLearnedCount: todayCount,
+      todayDate: today,
+      termConfidence: confidence,
+      wrongTermIds: wrongIds.map(int.parse).toSet(),
     );
 
-    if (validStreak != streak) {
+    if (validStreak != streak || savedTodayDate != today) {
       _saveToPrefs();
     }
   }
@@ -65,12 +93,21 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     final newReview = {...state.reviewTermIds}..remove(termId);
     final now = DateTime.now();
     final newStreak = _calculateNewStreak(now);
+    final today = _todayStr();
+
+    // Increment daily count only for newly completed terms
+    final isNew = !state.completedTermIds.contains(termId);
+    final newTodayCount = state.todayDate == today
+        ? state.todayLearnedCount + (isNew ? 1 : 0)
+        : (isNew ? 1 : 0);
 
     state = state.copyWith(
       completedTermIds: newCompleted,
       reviewTermIds: newReview,
       streak: newStreak,
       lastStudyDate: now,
+      todayLearnedCount: newTodayCount,
+      todayDate: today,
     );
     await _saveToPrefs();
   }
@@ -85,6 +122,51 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
       streak: newStreak,
       lastStudyDate: now,
     );
+    await _saveToPrefs();
+  }
+
+  Future<void> setDailyGoal(int goal) async {
+    state = state.copyWith(dailyGoal: goal.clamp(1, 20));
+    await _saveToPrefs();
+  }
+
+  Future<void> updateConfidence(int termId, bool correct) async {
+    final newConf = Map<int, int>.from(state.termConfidence);
+    final current = newConf[termId] ?? 0;
+    if (correct) {
+      newConf[termId] = (current + 1).clamp(0, 3);
+    } else {
+      newConf[termId] = (current - 1).clamp(0, 3);
+    }
+
+    final newWrong = Set<int>.from(state.wrongTermIds);
+    if (!correct) {
+      newWrong.add(termId);
+    } else if (newConf[termId]! >= 2) {
+      newWrong.remove(termId);
+    }
+
+    state = state.copyWith(
+      termConfidence: newConf,
+      wrongTermIds: newWrong,
+    );
+    await _saveToPrefs();
+  }
+
+  Future<void> clearWrongTerms() async {
+    state = state.copyWith(wrongTermIds: {});
+    await _saveToPrefs();
+  }
+
+  // Quick review: mark as "know" or "don't know"
+  Future<void> reviewKnow(int termId) async {
+    await updateConfidence(termId, true);
+  }
+
+  Future<void> reviewDontKnow(int termId) async {
+    await updateConfidence(termId, false);
+    final newReview = {...state.reviewTermIds, termId};
+    state = state.copyWith(reviewTermIds: newReview);
     await _saveToPrefs();
   }
 
@@ -123,6 +205,10 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     await _prefs.remove(SPKeys.quizHistory);
     await _prefs.setInt(SPKeys.streak, 0);
     await _prefs.remove(SPKeys.lastStudyDate);
+    await _prefs.remove(SPKeys.termConfidence);
+    await _prefs.remove(SPKeys.wrongTermIds);
+    await _prefs.remove(SPKeys.todayLearnedCount);
+    await _prefs.remove(SPKeys.todayDate);
   }
 
   Future<void> _saveToPrefs() async {
@@ -145,5 +231,18 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
         state.lastStudyDate!.toIso8601String(),
       );
     }
+    await _prefs.setInt(SPKeys.dailyGoal, state.dailyGoal);
+    await _prefs.setInt(SPKeys.todayLearnedCount, state.todayLearnedCount);
+    await _prefs.setString(SPKeys.todayDate, state.todayDate);
+    await _prefs.setStringList(
+      SPKeys.wrongTermIds,
+      state.wrongTermIds.map((e) => e.toString()).toList(),
+    );
+
+    // Save confidence as JSON
+    final confMap = state.termConfidence.map(
+      (k, v) => MapEntry(k.toString(), v),
+    );
+    await _prefs.setString(SPKeys.termConfidence, json.encode(confMap));
   }
 }

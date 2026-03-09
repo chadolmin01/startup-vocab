@@ -7,6 +7,7 @@ import '../providers/progress_provider.dart';
 import '../utils/constants.dart';
 
 enum QuizType { definitionToTerm, termToDefinition }
+enum QuizMode { normal, wrongOnly }
 
 class QuizQuestion {
   final Term term;
@@ -42,6 +43,7 @@ class QuizState {
   final int correctCount;
   final int? selectedAnswer;
   final bool isFinished;
+  final QuizMode mode;
 
   const QuizState({
     this.questions = const [],
@@ -49,6 +51,7 @@ class QuizState {
     this.correctCount = 0,
     this.selectedAnswer,
     this.isFinished = false,
+    this.mode = QuizMode.normal,
   });
 
   QuizQuestion? get currentQuestion =>
@@ -67,6 +70,7 @@ class QuizState {
     int? correctCount,
     int? selectedAnswer,
     bool? isFinished,
+    QuizMode? mode,
   }) {
     return QuizState(
       questions: questions ?? this.questions,
@@ -74,6 +78,7 @@ class QuizState {
       correctCount: correctCount ?? this.correctCount,
       selectedAnswer: selectedAnswer,
       isFinished: isFinished ?? this.isFinished,
+      mode: mode ?? this.mode,
     );
   }
 }
@@ -89,40 +94,78 @@ class QuizNotifier extends StateNotifier<QuizState> {
 
   QuizNotifier(this._ref) : super(const QuizState());
 
-  Future<void> generateQuiz() async {
+  Future<void> generateQuiz({QuizMode mode = QuizMode.normal}) async {
     final termsAsync = _ref.read(termsProvider);
     final progress = _ref.read(progressProvider);
 
     final allTerms = termsAsync.valueOrNull;
     if (allTerms == null) return;
 
-    final completedIds = progress.completedTermIds;
-    if (completedIds.length < AppConstants.quizMinTerms) return;
+    List<Term> pool;
+    if (mode == QuizMode.wrongOnly) {
+      // Only wrong terms
+      pool = allTerms
+          .where((t) => progress.wrongTermIds.contains(t.id))
+          .toList();
+    } else {
+      // SRS-weighted selection: lower confidence = higher chance
+      final completedIds = progress.completedTermIds;
+      if (completedIds.length < AppConstants.quizMinTerms) return;
 
-    final studiedTerms =
-        allTerms.where((t) => completedIds.contains(t.id)).toList();
-    studiedTerms.shuffle(_random);
+      final studiedTerms =
+          allTerms.where((t) => completedIds.contains(t.id)).toList();
 
-    final questionCount =
-        min(AppConstants.quizQuestionCount, studiedTerms.length);
-    final selectedTerms = studiedTerms.take(questionCount).toList();
+      // Weight by inverse confidence: conf 0 → weight 4, conf 3 → weight 1
+      final weighted = <Term>[];
+      for (final term in studiedTerms) {
+        final conf = progress.getConfidence(term.id);
+        final weight = 4 - conf; // 0→4, 1→3, 2→2, 3→1
+        for (int i = 0; i < weight; i++) {
+          weighted.add(term);
+        }
+      }
+      weighted.shuffle(_random);
+
+      // Deduplicate while preserving priority order
+      final seen = <int>{};
+      pool = [];
+      for (final term in weighted) {
+        if (seen.add(term.id)) {
+          pool.add(term);
+        }
+      }
+    }
+
+    if (pool.isEmpty) return;
+
+    final questionCount = min(AppConstants.quizQuestionCount, pool.length);
+    final selectedTerms = pool.take(questionCount).toList();
 
     final questions = <QuizQuestion>[];
     for (final term in selectedTerms) {
-      final type = _random.nextBool()
-          ? QuizType.definitionToTerm
-          : QuizType.termToDefinition;
+      final conf = progress.getConfidence(term.id);
+      // Mastered terms (conf >= 3) → reverse quiz (definition → term)
+      // Lower confidence → normal quiz (term → definition)
+      final QuizType type;
+      if (conf >= 3) {
+        type = QuizType.definitionToTerm;
+      } else if (conf >= 2) {
+        // 50/50 chance of reverse
+        type = _random.nextBool()
+            ? QuizType.definitionToTerm
+            : QuizType.termToDefinition;
+      } else {
+        type = QuizType.termToDefinition;
+      }
       questions.add(_createQuestion(term, type));
     }
 
-    state = QuizState(questions: questions);
+    state = QuizState(questions: questions, mode: mode);
   }
 
   QuizQuestion _createQuestion(Term term, QuizType type) {
     if (type == QuizType.definitionToTerm) {
       final correctAnswer = term.termKo;
-
-      // For def→term type, use other term names as wrong answers
       final termsAsync = _ref.read(termsProvider);
       final allTerms = termsAsync.valueOrNull ?? [];
       final otherTerms = allTerms
@@ -130,8 +173,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
           .map((t) => t.termKo)
           .toList();
       otherTerms.shuffle(_random);
-      final wrongTermNames =
-          otherTerms.take(3).toList();
+      final wrongTermNames = otherTerms.take(3).toList();
 
       final options = [correctAnswer, ...wrongTermNames]..shuffle(_random);
       final correctIndex = options.indexOf(correctAnswer);
@@ -157,13 +199,20 @@ class QuizNotifier extends StateNotifier<QuizState> {
 
   void submitAnswer(int selectedIndex) {
     if (state.selectedAnswer != null) return;
-    final isCorrect =
-        selectedIndex == state.currentQuestion?.correctIndex;
+    final question = state.currentQuestion;
+    if (question == null) return;
+
+    final isCorrect = selectedIndex == question.correctIndex;
     state = state.copyWith(
       selectedAnswer: selectedIndex,
       correctCount:
           isCorrect ? state.correctCount + 1 : state.correctCount,
     );
+
+    // Update SRS confidence
+    _ref
+        .read(progressProvider.notifier)
+        .updateConfidence(question.term.id, isCorrect);
   }
 
   void nextQuestion() {

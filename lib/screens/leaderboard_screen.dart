@@ -28,24 +28,20 @@ class LeaderboardScreen extends ConsumerWidget {
         child: !SupabaseService.isAvailable
             ? Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(Spacing.screenPadding),
                   child: FrameContainer(
                     label: 'STATUS // OFFLINE',
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.cloud_off,
-                            size: 36, color: AppColors.textMuted),
-                        const SizedBox(height: 16),
+                            size: 32, color: AppColors.textMuted),
+                        const SizedBox(height: Spacing.lg),
                         const Text(
                           '리더보드를 사용할 수 없습니다',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AppTextStyles.body,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: Spacing.sm),
                         Text(
                           'SUPABASE CONNECTION REQUIRED',
                           style: AppTextStyles.label,
@@ -67,17 +63,15 @@ class LeaderboardScreen extends ConsumerWidget {
                       data: (rank) {
                         if (rank == null) return const SizedBox();
                         return Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(Spacing.screenPadding),
                           child: FrameContainer(
                             label: 'MY RANK',
                             borderColor: AppColors.accent,
                             child: Center(
                               child: Text(
                                 '#$rank',
-                                style: const TextStyle(
-                                  fontFamily: 'monospace',
+                                style: AppTextStyles.stat.copyWith(
                                   fontSize: 28,
-                                  fontWeight: FontWeight.w800,
                                   color: AppColors.accent,
                                 ),
                               ),
@@ -98,7 +92,9 @@ class LeaderboardScreen extends ConsumerWidget {
                             );
                           }
                           return ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Spacing.screenPadding,
+                            ),
                             itemCount: entries.length,
                             itemBuilder: (context, index) {
                               final entry = entries[index];
@@ -126,26 +122,28 @@ class LeaderboardScreen extends ConsumerWidget {
   Widget _buildRankTile(int rank, Map<String, dynamic> entry, bool isMe) {
     final Color rankColor;
     if (rank == 1) {
-      rankColor = const Color(0xFFFFD700);
-    } else if (rank == 2) {
-      rankColor = const Color(0xFFC0C0C0);
-    } else if (rank == 3) {
-      rankColor = const Color(0xFFCD7F32);
+      rankColor = AppColors.warning;
+    } else if (rank <= 3) {
+      rankColor = AppColors.textSecondary;
     } else {
       rankColor = AppColors.textMuted;
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 4),
+      margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
         border: Border.all(
           color: isMe ? AppColors.accent.withValues(alpha: 0.5) : AppColors.cardBorder,
         ),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
         color: isMe ? AppColors.accent.withValues(alpha: 0.05) : AppColors.cardBackground,
       ),
       child: ListTile(
         dense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: Spacing.lg,
+          vertical: Spacing.xs,
+        ),
         leading: SizedBox(
           width: 32,
           child: Text(
@@ -168,7 +166,7 @@ class LeaderboardScreen extends ConsumerWidget {
         ),
         subtitle: Text(
           'QUIZ ${entry['quiz_count'] ?? 0}',
-          style: AppTextStyles.label.copyWith(fontSize: 9),
+          style: AppTextStyles.label,
         ),
         trailing: Text(
           '${entry['total_score'] ?? 0}',

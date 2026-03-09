@@ -23,16 +23,15 @@ class DictionaryScreen extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(Spacing.screenPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Search bar
                   TextField(
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                    style: AppTextStyles.body,
                     decoration: InputDecoration(
                       hintText: '용어 검색...',
-                      hintStyle: const TextStyle(color: AppColors.textMuted),
                       prefixIcon: const Icon(Icons.search,
                           color: AppColors.textMuted, size: 18),
                       suffixIcon: searchQuery.isNotEmpty
@@ -49,22 +48,19 @@ class DictionaryScreen extends ConsumerWidget {
                       ref.read(searchQueryProvider.notifier).state = value;
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.lg),
                   // Progress
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'PROGRESS',
-                        style: AppTextStyles.label,
-                      ),
+                      Text('PROGRESS', style: AppTextStyles.label),
                       Text(
                         '${progress.totalCompleted} / ${AppConstants.totalTerms}',
-                        style: AppTextStyles.labelColored(AppColors.accent).copyWith(fontSize: 11),
+                        style: AppTextStyles.labelColored(AppColors.accent),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: Spacing.sm),
                   ProgressBar(
                     percent:
                         progress.totalCompleted / AppConstants.totalTerms,
@@ -94,7 +90,10 @@ class DictionaryScreen extends ConsumerWidget {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.screenPadding,
+            vertical: Spacing.md,
+          ),
           itemCount: terms.length,
           itemBuilder: (context, index) {
             final term = terms[index];
@@ -117,7 +116,10 @@ class DictionaryScreen extends ConsumerWidget {
       data: (grouped) {
         final weeks = grouped.keys.toList()..sort();
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.screenPadding,
+            vertical: Spacing.md,
+          ),
           itemCount: weeks.length,
           itemBuilder: (context, weekIndex) {
             final week = weeks[weekIndex];
@@ -129,20 +131,23 @@ class DictionaryScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: Spacing.md),
                   child: Row(
                     children: [
                       Container(
                         width: 3,
                         height: 16,
-                        color: categoryColor,
+                        decoration: BoxDecoration(
+                          color: categoryColor,
+                          borderRadius: BorderRadius.circular(1),
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Spacing.sm),
                       Text(
                         'WEEK $week',
-                        style: AppTextStyles.labelBright.copyWith(fontSize: 11),
+                        style: AppTextStyles.labelBright,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Spacing.sm),
                       CategoryBadge(category: category),
                     ],
                   ),
@@ -153,7 +158,7 @@ class DictionaryScreen extends ConsumerWidget {
                   return _buildTermTile(context, term, isCompleted);
                 }),
                 if (weekIndex < weeks.length - 1)
-                  const Divider(height: 24),
+                  const Divider(height: Spacing.xl),
               ],
             );
           },
@@ -166,38 +171,28 @@ class DictionaryScreen extends ConsumerWidget {
 
   Widget _buildTermTile(BuildContext context, Term term, bool isCompleted) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 4),
+      margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.cardBorder),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
         color: AppColors.cardBackground,
       ),
       child: ListTile(
         dense: true,
         visualDensity: VisualDensity.compact,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: Spacing.lg,
+          vertical: Spacing.xs,
+        ),
         leading: Icon(
-          isCompleted ? Icons.check : Icons.circle_outlined,
+          isCompleted ? Icons.check_circle : Icons.circle_outlined,
           color: isCompleted ? AppColors.success : AppColors.textMuted,
-          size: 16,
+          size: 18,
         ),
-        title: Text(
-          term.termKo,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        subtitle: Text(
-          term.termEn,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
-            color: AppColors.textMuted,
-          ),
-        ),
+        title: Text(term.termKo, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
+        subtitle: Text(term.termEn, style: AppTextStyles.mono),
         trailing: const Icon(Icons.chevron_right,
-            color: AppColors.textMuted, size: 16),
+            color: AppColors.textMuted, size: 18),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(

@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../providers/progress_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/glass_container.dart';
+import '../widgets/star_field.dart';
 
 class NicknameScreen extends ConsumerStatefulWidget {
   const NicknameScreen({super.key});
@@ -44,64 +45,51 @@ class _NicknameScreenState extends ConsumerState<NicknameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+      body: StarField(
+        starCount: 70,
+        child: SafeArea(
+          child: Padding(
+          padding: const EdgeInsets.all(Spacing.screenPadding),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo area
+              // Logo
               Container(
-                width: 72,
-                height: 72,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+                  color: AppColors.accent.withValues(alpha: 0.08),
                 ),
                 child: const Icon(
                   Icons.rocket_launch,
-                  size: 36,
+                  size: 32,
                   color: AppColors.accent,
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text(
-                '스타트업 한 입',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 6),
+              const SizedBox(height: Spacing.xl),
+              const Text('스타트업 한 입', style: AppTextStyles.h1),
+              const SizedBox(height: Spacing.sm),
               Text(
                 'STARTUP BITE // ODYSSEY VENTURES',
-                style: AppTextStyles.label,
+                style: AppTextStyles.labelBright,
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: Spacing.xxl),
               FrameContainer(
                 label: 'INITIALIZE',
                 child: Column(
                   children: [
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        '닉네임을 입력해주세요',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+                      child: Text('닉네임을 입력해주세요', style: AppTextStyles.h3),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Spacing.lg),
                     TextField(
                       controller: _controller,
-                      style: const TextStyle(color: AppColors.textPrimary),
+                      style: AppTextStyles.body,
                       decoration: const InputDecoration(
                         hintText: '닉네임 (2~10자)',
-                        hintStyle: TextStyle(color: AppColors.textMuted),
                       ),
                       maxLength: 10,
                       onChanged: (value) {
@@ -110,7 +98,7 @@ class _NicknameScreenState extends ConsumerState<NicknameScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Spacing.lg),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -124,6 +112,7 @@ class _NicknameScreenState extends ConsumerState<NicknameScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

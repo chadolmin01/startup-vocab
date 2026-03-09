@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 
-/// Sharp-framed container — no glassmorphism, clean borders
 class FrameContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final Color? borderColor;
   final Color? backgroundColor;
-  final String? label; // technical label top-left
+  final String? label;
 
   const FrameContainer({
     super.key,
@@ -26,10 +25,8 @@ class FrameContainer extends StatelessWidget {
       margin: margin,
       decoration: BoxDecoration(
         color: backgroundColor ?? AppColors.cardBackground,
+        border: Border.all(color: borderColor ?? AppColors.cardBorder),
         borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
-        border: Border.all(
-          color: borderColor ?? AppColors.cardBorder,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,19 +35,17 @@ class FrameContainer extends StatelessWidget {
           if (label != null)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.lg,
+                vertical: Spacing.sm,
+              ),
               decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: AppColors.cardBorder),
-                ),
+                border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
               ),
-              child: Text(
-                label!.toUpperCase(),
-                style: AppTextStyles.label,
-              ),
+              child: Text(label!.toUpperCase(), style: AppTextStyles.label),
             ),
           Padding(
-            padding: padding ?? const EdgeInsets.all(20),
+            padding: padding ?? const EdgeInsets.all(Spacing.lg),
             child: child,
           ),
         ],
@@ -59,5 +54,4 @@ class FrameContainer extends StatelessWidget {
   }
 }
 
-// Keep GlassContainer as alias for backward compatibility during migration
 typedef GlassContainer = FrameContainer;
