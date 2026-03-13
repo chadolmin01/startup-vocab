@@ -237,8 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(width: Spacing.sm),
             Text(
               '${progress.todayLearnedCount}/${progress.dailyGoal}',
-              style: TextStyle(
-                fontFamily: 'monospace',
+              style: AppTextStyles.mono.copyWith(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: color,

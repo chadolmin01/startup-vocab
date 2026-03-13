@@ -83,9 +83,9 @@ class TermCard extends StatelessWidget {
                     left: BorderSide(color: AppColors.accent, width: 2),
                   ),
                   color: AppColors.accent.withValues(alpha: 0.05),
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(4),
-                    bottomRight: Radius.circular(4),
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(AppConstants.cardBorderRadius),
+                    bottomRight: Radius.circular(AppConstants.cardBorderRadius),
                   ),
                 ),
                 child: Column(

@@ -130,7 +130,7 @@ class LeaderboardScreen extends ConsumerWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
+      margin: const EdgeInsets.only(bottom: Spacing.sm),
       decoration: BoxDecoration(
         border: Border.all(
           color: isMe ? AppColors.accent.withValues(alpha: 0.5) : AppColors.cardBorder,

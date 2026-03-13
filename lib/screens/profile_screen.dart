@@ -241,7 +241,7 @@ class ProfileScreen extends ConsumerWidget {
             return Column(
               children: reviewTerms.map((term) {
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 6),
+                  margin: const EdgeInsets.only(bottom: Spacing.sm),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.cardBorder),
                     borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),

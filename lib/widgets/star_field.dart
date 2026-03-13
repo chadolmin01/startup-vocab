@@ -19,12 +19,14 @@ class StarField extends StatefulWidget {
   State<StarField> createState() => _StarFieldState();
 }
 
-class _StarFieldState extends State<StarField> with TickerProviderStateMixin {
+class _StarFieldState extends State<StarField>
+    with TickerProviderStateMixin, RouteAware {
   late final AnimationController _twinkleController;
   late final AnimationController _shootingStarController;
   final _random = Random();
   late List<_Star> _stars;
   _ShootingStar? _shootingStar;
+  bool _visible = true;
 
   @override
   void initState() {
@@ -49,7 +51,7 @@ class _StarFieldState extends State<StarField> with TickerProviderStateMixin {
   void _scheduleShootingStar() {
     final delay = Duration(seconds: 4 + _random.nextInt(8));
     Future.delayed(delay, () {
-      if (!mounted) return;
+      if (!mounted || !_visible) return;
       _triggerShootingStar();
       _scheduleShootingStar();
     });
@@ -60,6 +62,24 @@ class _StarFieldState extends State<StarField> with TickerProviderStateMixin {
     _shootingStarController
       ..reset()
       ..forward();
+  }
+
+  /// Pause animations when not visible (e.g., behind another IndexedStack tab)
+  void pause() {
+    if (!_visible) return;
+    _visible = false;
+    _twinkleController.stop();
+    _shootingStarController.stop();
+  }
+
+  /// Resume animations
+  void resume() {
+    if (_visible) return;
+    _visible = true;
+    _twinkleController.repeat();
+    if (widget.showShootingStars) {
+      _scheduleShootingStar();
+    }
   }
 
   @override
@@ -115,15 +135,14 @@ class _Star {
   });
 
   factory _Star.random(Random rng) {
-    // Mostly white, some with subtle blue/warm tint
     final colorRoll = rng.nextDouble();
     Color color;
     if (colorRoll < 0.7) {
       color = const Color(0xFFFFFFFF);
     } else if (colorRoll < 0.85) {
-      color = const Color(0xFFB0C4FF); // cool blue
+      color = const Color(0xFFB0C4FF);
     } else {
-      color = const Color(0xFFFFE4C4); // warm
+      color = const Color(0xFFFFE4C4);
     }
 
     return _Star(
@@ -140,7 +159,7 @@ class _Star {
 class _ShootingStar {
   final double startX;
   final double startY;
-  final double angle; // radians
+  final double angle;
   final double length;
 
   const _ShootingStar({
@@ -154,7 +173,7 @@ class _ShootingStar {
     return _ShootingStar(
       startX: 0.2 + rng.nextDouble() * 0.6,
       startY: rng.nextDouble() * 0.4,
-      angle: pi / 6 + rng.nextDouble() * pi / 4, // 30-75 degrees
+      angle: pi / 6 + rng.nextDouble() * pi / 4,
       length: 0.15 + rng.nextDouble() * 0.2,
     );
   }
@@ -175,7 +194,6 @@ class _StarFieldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw stars
     for (final star in stars) {
       final twinkle = sin((twinklePhase + star.twinkleSpeed) * pi * 2);
       final alpha = (star.brightness + twinkle * 0.25).clamp(0.05, 0.85);
@@ -191,7 +209,6 @@ class _StarFieldPainter extends CustomPainter {
       );
     }
 
-    // Draw shooting star
     if (shootingStar != null && shootingProgress > 0 && shootingProgress < 1) {
       _drawShootingStar(canvas, size, shootingStar!, shootingProgress);
     }
@@ -208,7 +225,6 @@ class _StarFieldPainter extends CustomPainter {
     final dx = cos(ss.angle) * ss.length * size.width;
     final dy = sin(ss.angle) * ss.length * size.height;
 
-    // Trail head position
     final headT = progress;
     final tailT = (progress - 0.4).clamp(0.0, 1.0);
 
@@ -217,7 +233,6 @@ class _StarFieldPainter extends CustomPainter {
     final tailX = startX + dx * tailT;
     final tailY = startY + dy * tailT;
 
-    // Fade in/out
     final alpha = progress < 0.2
         ? progress / 0.2
         : progress > 0.7
@@ -240,7 +255,6 @@ class _StarFieldPainter extends CustomPainter {
 
     canvas.drawLine(Offset(tailX, tailY), Offset(headX, headY), paint);
 
-    // Bright head dot
     final headPaint = Paint()
       ..color = Color.fromRGBO(255, 255, 255, alpha)
       ..style = PaintingStyle.fill;
@@ -248,5 +262,7 @@ class _StarFieldPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_StarFieldPainter oldDelegate) => true;
+  bool shouldRepaint(_StarFieldPainter oldDelegate) =>
+      twinklePhase != oldDelegate.twinklePhase ||
+      shootingProgress != oldDelegate.shootingProgress;
 }

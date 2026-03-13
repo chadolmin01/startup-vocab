@@ -86,7 +86,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     _settingsToggle(
                       icon: Icons.notifications_outlined,
                       title: '학습 리마인더',
-                      subtitle: '매일 오전 9시',
+                      subtitle: '하루 1회',
                       value: _notificationsEnabled,
                       onChanged: (value) async {
                         setState(() => _notificationsEnabled = value);
