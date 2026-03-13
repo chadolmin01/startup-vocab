@@ -71,8 +71,8 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     final todayCount = savedTodayDate == today ? savedTodayCount : 0;
 
     state = StudyProgress(
-      completedTermIds: completedIds.map(int.parse).toSet(),
-      reviewTermIds: reviewIds.map(int.parse).toSet(),
+      completedTermIds: completedIds.map((s) => int.tryParse(s)).whereType<int>().toSet(),
+      reviewTermIds: reviewIds.map((s) => int.tryParse(s)).whereType<int>().toSet(),
       quizHistory: quizHistory,
       streak: validStreak,
       lastStudyDate: lastStudy,
@@ -80,7 +80,7 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
       todayLearnedCount: todayCount,
       todayDate: today,
       termConfidence: confidence,
-      wrongTermIds: wrongIds.map(int.parse).toSet(),
+      wrongTermIds: wrongIds.map((s) => int.tryParse(s)).whereType<int>().toSet(),
     );
 
     if (validStreak != streak || savedTodayDate != today) {
@@ -164,9 +164,19 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
   }
 
   Future<void> reviewDontKnow(int termId) async {
-    await updateConfidence(termId, false);
+    // Update confidence + add to review in one state change (single save)
+    final newConf = Map<int, int>.from(state.termConfidence);
+    final current = newConf[termId] ?? 0;
+    newConf[termId] = (current - 1).clamp(0, 3);
+
+    final newWrong = Set<int>.from(state.wrongTermIds)..add(termId);
     final newReview = {...state.reviewTermIds, termId};
-    state = state.copyWith(reviewTermIds: newReview);
+
+    state = state.copyWith(
+      termConfidence: newConf,
+      wrongTermIds: newWrong,
+      reviewTermIds: newReview,
+    );
     await _saveToPrefs();
   }
 

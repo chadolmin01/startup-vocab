@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/progress_provider.dart';
@@ -20,20 +21,17 @@ void main() async {
     await SupabaseService.initialize();
   }
 
-  // Initialize home widget (mobile only)
   if (!kIsWeb) {
+    // Initialize home widget + cache terms for background callback
     try {
       await WidgetService.initialize();
+      final termsJson =
+          await rootBundle.loadString('assets/data/terms.json');
+      await WidgetService.cacheTermsData(termsJson);
     } catch (_) {}
-  }
 
-  // Initialize notifications (mobile only)
-  if (kIsWeb) {
-    // skip
-  } else {
+    // Initialize notifications
     await NotificationService.initialize();
-  }
-  if (!kIsWeb) {
     final notifEnabled = prefs.getBool(SPKeys.notificationEnabled) ?? true;
     if (notifEnabled) {
       await NotificationService.scheduleDailyReminder();
@@ -43,7 +41,7 @@ void main() async {
   // Get or set first launch date
   final firstLaunchStr = prefs.getString(SPKeys.firstLaunchDate);
   final firstLaunchDate = firstLaunchStr != null
-      ? DateTime.parse(firstLaunchStr)
+      ? (DateTime.tryParse(firstLaunchStr) ?? DateTime.now())
       : DateTime.now();
   if (firstLaunchStr == null) {
     await prefs.setString(

@@ -9,11 +9,24 @@ import '../widgets/category_badge.dart';
 import '../widgets/progress_bar.dart';
 import 'term_detail_screen.dart';
 
-class DictionaryScreen extends ConsumerWidget {
+class DictionaryScreen extends ConsumerStatefulWidget {
   const DictionaryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DictionaryScreen> createState() => _DictionaryScreenState();
+}
+
+class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final searchQuery = ref.watch(searchQueryProvider);
     final progress = ref.watch(progressProvider);
     final termsByWeekAsync = ref.watch(termsByWeekProvider);
@@ -27,8 +40,8 @@ class DictionaryScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Search bar
                   TextField(
+                    controller: _searchController,
                     style: AppTextStyles.body,
                     decoration: InputDecoration(
                       hintText: '용어 검색...',
@@ -38,9 +51,12 @@ class DictionaryScreen extends ConsumerWidget {
                           ? IconButton(
                               icon: const Icon(Icons.clear,
                                   color: AppColors.textMuted, size: 16),
-                              onPressed: () => ref
-                                  .read(searchQueryProvider.notifier)
-                                  .state = '',
+                              onPressed: () {
+                                _searchController.clear();
+                                ref
+                                    .read(searchQueryProvider.notifier)
+                                    .state = '';
+                              },
                             )
                           : null,
                     ),
@@ -49,7 +65,6 @@ class DictionaryScreen extends ConsumerWidget {
                     },
                   ),
                   const SizedBox(height: Spacing.lg),
-                  // Progress
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -103,7 +118,10 @@ class DictionaryScreen extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('ERROR: $e')),
+      error: (e, _) => Center(
+        child: Text('ERROR: $e',
+            style: AppTextStyles.label.copyWith(color: AppColors.error)),
+      ),
     );
   }
 
@@ -165,13 +183,16 @@ class DictionaryScreen extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('ERROR: $e')),
+      error: (e, _) => Center(
+        child: Text('ERROR: $e',
+            style: AppTextStyles.label.copyWith(color: AppColors.error)),
+      ),
     );
   }
 
   Widget _buildTermTile(BuildContext context, Term term, bool isCompleted) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
+      margin: const EdgeInsets.only(bottom: Spacing.sm),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.cardBorder),
         borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),

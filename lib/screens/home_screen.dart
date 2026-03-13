@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import '../models/term.dart';
+import '../models/study_progress.dart';
 import '../providers/terms_provider.dart';
 import '../providers/progress_provider.dart';
 import '../utils/constants.dart';
@@ -9,7 +11,6 @@ import '../widgets/term_card.dart';
 import '../widgets/streak_counter.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/star_field.dart';
-import 'package:flutter/foundation.dart';
 import '../services/widget_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -65,10 +66,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             final term = queue[_currentIndex];
             final isCompleted = progress.completedTermIds.contains(term.id);
 
-            // Update home widget only when term changes (mobile only)
+            // Update home widget (post-frame to avoid side effect in build)
             if (!kIsWeb && _lastWidgetTermId != term.id) {
               _lastWidgetTermId = term.id;
-              WidgetService.updateWidget(term: term, dayNumber: dayNumber);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                WidgetService.updateWidget(term: term, dayNumber: dayNumber);
+              });
             }
 
             return Padding(
@@ -184,7 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildDailyGoal(dynamic progress) {
+  Widget _buildDailyGoal(StudyProgress progress) {
     final goalReached = progress.isDailyGoalReached;
     final color = goalReached ? AppColors.success : AppColors.accent;
 
@@ -333,7 +336,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildAllComplete(dynamic progress, int total) {
+  Widget _buildAllComplete(StudyProgress progress, int total) {
     return Padding(
       padding: const EdgeInsets.all(Spacing.screenPadding),
       child: Center(

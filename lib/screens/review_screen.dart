@@ -54,7 +54,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             return _buildReviewCard();
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('ERROR: $e')),
+          error: (e, _) => Center(
+            child: Text('ERROR: $e',
+                style: AppTextStyles.label.copyWith(color: AppColors.error)),
+          ),
         ),
       ),
     );
@@ -235,7 +238,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   Widget _confidenceDot(int level, int current) {
-    final active = current > level;
+    // level 0-3, current 0-3. current=3 → all 4 dots lit
+    final active = current > level || (current == 3 && level == 3);
     final colors = [AppColors.error, AppColors.warning, AppColors.accent, AppColors.success];
     return Container(
       width: 8,

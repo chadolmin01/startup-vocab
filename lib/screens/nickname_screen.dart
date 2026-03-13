@@ -32,10 +32,7 @@ class _NicknameScreenState extends ConsumerState<NicknameScreen> {
 
     await prefs.setString(SPKeys.nickname, nickname);
     await prefs.setString(SPKeys.deviceId, deviceId);
-    await prefs.setString(
-      SPKeys.firstLaunchDate,
-      DateTime.now().toIso8601String(),
-    );
+    // firstLaunchDate is already set in main.dart — don't overwrite
 
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/main');

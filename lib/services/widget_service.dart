@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/term.dart';
@@ -8,10 +7,17 @@ import '../utils/constants.dart';
 class WidgetService {
   static const _appGroupId = 'com.odysseyventures.startup_bite';
   static const _androidWidgetName = 'TermWidgetProvider';
+  static const _termsCacheKey = 'cached_terms_json';
 
   static Future<void> initialize() async {
     await HomeWidget.setAppGroupId(_appGroupId);
     HomeWidget.registerInteractivityCallback(widgetInteractivityCallback);
+  }
+
+  /// Cache terms JSON into SharedPreferences so background callback can access it
+  static Future<void> cacheTermsData(String termsJson) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_termsCacheKey, termsJson);
   }
 
   static Future<void> updateWidget({
@@ -37,7 +43,7 @@ Future<void> widgetInteractivityCallback(Uri? uri) async {
   if (uri == null) return;
 
   final prefs = await SharedPreferences.getInstance();
-  await prefs.reload(); // ensure fresh data
+  await prefs.reload();
 
   if (uri.host == 'markcomplete') {
     await _handleMarkComplete(prefs);
@@ -46,21 +52,16 @@ Future<void> widgetInteractivityCallback(Uri? uri) async {
   }
 }
 
-/// Mark current widget term as completed, then advance to next
 Future<void> _handleMarkComplete(SharedPreferences prefs) async {
-  // current_term_id is stored in HomeWidgetPreferences, not regular prefs
   final currentTermId = await HomeWidget.getWidgetData<int>('current_term_id');
   if (currentTermId == null) return;
 
-  // Add to completed set
-  final completedIds =
-      prefs.getStringList(SPKeys.completedTermIds) ?? [];
+  final completedIds = prefs.getStringList(SPKeys.completedTermIds) ?? [];
   final idStr = currentTermId.toString();
   if (!completedIds.contains(idStr)) {
     completedIds.add(idStr);
     await prefs.setStringList(SPKeys.completedTermIds, completedIds);
 
-    // Increment daily count
     final today = _todayStr();
     final savedDate = prefs.getString(SPKeys.todayDate) ?? '';
     int count = savedDate == today
@@ -70,36 +71,30 @@ Future<void> _handleMarkComplete(SharedPreferences prefs) async {
     await prefs.setInt(SPKeys.todayLearnedCount, count);
     await prefs.setString(SPKeys.todayDate, today);
 
-    // Update streak
     await _updateStreak(prefs);
   }
 
-  // Advance to next term
   await _advanceWidgetTerm(prefs);
 }
 
-/// Move widget to next unlearned term
 Future<void> _handleNextTerm(SharedPreferences prefs) async {
   await _advanceWidgetTerm(prefs);
 }
 
-/// Load terms from assets, find next unlearned, push to widget
 Future<void> _advanceWidgetTerm(SharedPreferences prefs) async {
-  final terms = await _loadTerms();
+  final terms = _loadTermsFromCache(prefs);
   if (terms.isEmpty) return;
 
   final completedIds =
       (prefs.getStringList(SPKeys.completedTermIds) ?? []).toSet();
   final firstLaunchStr = prefs.getString(SPKeys.firstLaunchDate);
   final firstLaunch = firstLaunchStr != null
-      ? DateTime.parse(firstLaunchStr)
+      ? (DateTime.tryParse(firstLaunchStr) ?? DateTime.now())
       : DateTime.now();
 
   final todayIndex = _getTodayTermIndex(firstLaunch);
-  final currentWidgetIndex =
-      prefs.getInt(SPKeys.widgetTermIndex) ?? 0;
+  final currentWidgetIndex = prefs.getInt(SPKeys.widgetTermIndex) ?? 0;
 
-  // Find next unlearned term starting from current+1
   int nextIdx = -1;
   for (int i = 1; i <= terms.length; i++) {
     final checkIdx = (todayIndex + currentWidgetIndex + i) % terms.length;
@@ -110,7 +105,6 @@ Future<void> _advanceWidgetTerm(SharedPreferences prefs) async {
   }
 
   if (nextIdx == -1) {
-    // All complete
     await HomeWidget.saveWidgetData('term_ko', '모두 완료!');
     await HomeWidget.saveWidgetData('term_en', 'ALL COMPLETE');
     await HomeWidget.saveWidgetData('term_definition', '축하합니다! 모든 용어를 학습했어요');
@@ -132,15 +126,14 @@ Future<void> _advanceWidgetTerm(SharedPreferences prefs) async {
     await prefs.setInt(SPKeys.widgetTermIndex, nextIdx);
   }
 
-  await HomeWidget.updateWidget(
-      androidName: 'TermWidgetProvider');
+  await HomeWidget.updateWidget(androidName: 'TermWidgetProvider');
 }
 
-/// Load terms JSON directly (no Flutter engine rootBundle available in background)
-Future<List<Map<String, dynamic>>> _loadTerms() async {
+/// Load terms from SharedPreferences cache (NOT rootBundle — unavailable in background)
+List<Map<String, dynamic>> _loadTermsFromCache(SharedPreferences prefs) {
   try {
-    final jsonString =
-        await rootBundle.loadString('assets/data/terms.json');
+    final jsonString = prefs.getString(WidgetService._termsCacheKey);
+    if (jsonString == null) return [];
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     final termsList = jsonData['terms'] as List;
     return termsList.cast<Map<String, dynamic>>();
@@ -158,7 +151,7 @@ int _getTodayTermIndex(DateTime firstLaunchDate) {
     firstLaunchDate.day,
   );
   final daysSinceStart = today.difference(start).inDays;
-  return daysSinceStart % 63;
+  return daysSinceStart % AppConstants.totalTerms;
 }
 
 String _todayStr() {
@@ -175,17 +168,22 @@ Future<void> _updateStreak(SharedPreferences prefs) async {
   if (lastStudyStr == null) {
     newStreak = 1;
   } else {
-    final lastStudy = DateTime.parse(lastStudyStr);
-    final lastDate = DateTime(lastStudy.year, lastStudy.month, lastStudy.day);
-    final today = DateTime(now.year, now.month, now.day);
-    final diff = today.difference(lastDate).inDays;
-
-    if (diff == 0) {
-      newStreak = currentStreak;
-    } else if (diff == 1) {
-      newStreak = currentStreak + 1;
-    } else {
+    final lastStudy = DateTime.tryParse(lastStudyStr);
+    if (lastStudy == null) {
       newStreak = 1;
+    } else {
+      final lastDate =
+          DateTime(lastStudy.year, lastStudy.month, lastStudy.day);
+      final today = DateTime(now.year, now.month, now.day);
+      final diff = today.difference(lastDate).inDays;
+
+      if (diff == 0) {
+        newStreak = currentStreak;
+      } else if (diff == 1) {
+        newStreak = currentStreak + 1;
+      } else {
+        newStreak = 1;
+      }
     }
   }
 
