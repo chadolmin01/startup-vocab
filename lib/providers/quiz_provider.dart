@@ -6,7 +6,7 @@ import '../providers/terms_provider.dart';
 import '../providers/progress_provider.dart';
 import '../utils/constants.dart';
 
-enum QuizType { definitionToTerm, termToDefinition }
+enum QuizType { definitionToTerm, termToDefinition, exampleToTerm }
 enum QuizMode { normal, wrongOnly }
 
 class QuizQuestion {
@@ -23,17 +23,25 @@ class QuizQuestion {
   });
 
   String get questionText {
-    if (type == QuizType.definitionToTerm) {
-      return '다음 설명에 해당하는 용어는?';
+    switch (type) {
+      case QuizType.definitionToTerm:
+        return '다음 설명에 해당하는 용어는?';
+      case QuizType.exampleToTerm:
+        return '다음 예시에 해당하는 용어는?';
+      case QuizType.termToDefinition:
+        return '"${term.termKo}"의 올바른 설명은?';
     }
-    return '"${term.termKo}"의 올바른 설명은?';
   }
 
   String get questionBody {
-    if (type == QuizType.definitionToTerm) {
-      return term.definitionShort;
+    switch (type) {
+      case QuizType.definitionToTerm:
+        return term.definitionShort;
+      case QuizType.exampleToTerm:
+        return term.example;
+      case QuizType.termToDefinition:
+        return '';
     }
-    return '';
   }
 }
 
@@ -119,7 +127,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
       final weighted = <Term>[];
       for (final term in studiedTerms) {
         final conf = progress.getConfidence(term.id);
-        final weight = 4 - conf; // 0→4, 1→3, 2→2, 3→1
+        final weight = (AppConstants.maxConfidence + 1) - conf; // 0→4, 1→3, 2→2, 3→1
         for (int i = 0; i < weight; i++) {
           weighted.add(term);
         }
@@ -147,9 +155,15 @@ class QuizNotifier extends StateNotifier<QuizState> {
       // Mastered terms (conf >= 3) → reverse quiz (definition → term)
       // Lower confidence → normal quiz (term → definition)
       final QuizType type;
-      if (conf >= 3) {
-        type = QuizType.definitionToTerm;
-      } else if (conf >= 2) {
+      if (conf >= AppConstants.maxConfidence) {
+        // Mastered: mix of definition→term and example→term
+        final roll = _random.nextInt(3);
+        if (roll == 0 && term.example.isNotEmpty) {
+          type = QuizType.exampleToTerm;
+        } else {
+          type = QuizType.definitionToTerm;
+        }
+      } else if (conf >= AppConstants.maxConfidence - 1) {
         // 50/50 chance of reverse
         type = _random.nextBool()
             ? QuizType.definitionToTerm
@@ -164,7 +178,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
   }
 
   QuizQuestion _createQuestion(Term term, QuizType type) {
-    if (type == QuizType.definitionToTerm) {
+    if (type == QuizType.definitionToTerm || type == QuizType.exampleToTerm) {
       final correctAnswer = term.termKo;
       final termsAsync = _ref.read(termsProvider);
       final allTerms = termsAsync.valueOrNull ?? [];
@@ -173,7 +187,12 @@ class QuizNotifier extends StateNotifier<QuizState> {
           .map((t) => t.termKo)
           .toList();
       otherTerms.shuffle(_random);
-      final wrongTermNames = otherTerms.take(3).toList();
+      final wrongTermNames = otherTerms.take(AppConstants.quizWrongAnswerCount).toList();
+
+      // Fallback: if not enough wrong options, pad with placeholders
+      while (wrongTermNames.length < AppConstants.quizWrongAnswerCount) {
+        wrongTermNames.add('선택지 ${wrongTermNames.length + 1}');
+      }
 
       final options = [correctAnswer, ...wrongTermNames]..shuffle(_random);
       final correctIndex = options.indexOf(correctAnswer);
@@ -186,6 +205,27 @@ class QuizNotifier extends StateNotifier<QuizState> {
     } else {
       final correctAnswer = term.definitionShort;
       final wrongAnswers = List<String>.from(term.quizWrongAnswers);
+
+      // Edge case: ensure we have exactly quizWrongAnswerCount wrong answers
+      if (wrongAnswers.length > AppConstants.quizWrongAnswerCount) {
+        wrongAnswers.shuffle(_random);
+        wrongAnswers.removeRange(AppConstants.quizWrongAnswerCount, wrongAnswers.length);
+      } else if (wrongAnswers.length < AppConstants.quizWrongAnswerCount) {
+        // Fallback: generate from other terms' definitions
+        final allTerms = _ref.read(termsProvider).valueOrNull ?? [];
+        final otherDefs = allTerms
+            .where((t) => t.id != term.id)
+            .map((t) => t.definitionShort)
+            .toList()
+          ..shuffle(_random);
+        for (final def in otherDefs) {
+          if (wrongAnswers.length >= AppConstants.quizWrongAnswerCount) break;
+          if (!wrongAnswers.contains(def) && def != correctAnswer) {
+            wrongAnswers.add(def);
+          }
+        }
+      }
+
       final options = [correctAnswer, ...wrongAnswers]..shuffle(_random);
       final correctIndex = options.indexOf(correctAnswer);
       return QuizQuestion(

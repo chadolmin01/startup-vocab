@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/constants.dart';
+import '../utils/logger.dart';
 
 class SupabaseService {
   static SupabaseClient? _client;
@@ -14,6 +15,7 @@ class SupabaseService {
       _client = Supabase.instance.client;
       _initialized = true;
     } catch (e) {
+      AppLogger.error('SupabaseService.initialize', e);
       _initialized = false;
     }
   }
@@ -44,7 +46,9 @@ class SupabaseService {
         },
         onConflict: 'device_id',
       );
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('SupabaseService.submitScore', e);
+    }
   }
 
   static Future<List<Map<String, dynamic>>> fetchLeaderboard({
@@ -58,8 +62,9 @@ class SupabaseService {
           .order('total_score', ascending: false)
           .limit(limit);
       return List<Map<String, dynamic>>.from(response);
-    } catch (_) {
-      return [];
+    } catch (e) {
+      AppLogger.error('SupabaseService.fetchLeaderboard', e);
+      rethrow;
     }
   }
 
@@ -75,7 +80,8 @@ class SupabaseService {
         if (list[i]['device_id'] == deviceId) return i + 1;
       }
       return null;
-    } catch (_) {
+    } catch (e) {
+      AppLogger.error('SupabaseService.fetchUserRank', e);
       return null;
     }
   }

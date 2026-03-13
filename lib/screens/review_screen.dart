@@ -6,6 +6,7 @@ import '../providers/progress_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/progress_bar.dart';
+import '../widgets/star_field.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   const ReviewScreen({super.key});
@@ -14,7 +15,8 @@ class ReviewScreen extends ConsumerStatefulWidget {
   ConsumerState<ReviewScreen> createState() => _ReviewScreenState();
 }
 
-class _ReviewScreenState extends ConsumerState<ReviewScreen> {
+class _ReviewScreenState extends ConsumerState<ReviewScreen>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   bool _showAnswer = false;
   int _knowCount = 0;
@@ -22,20 +24,110 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   List<Term> _reviewTerms = [];
   bool _finished = false;
 
+  late final AnimationController _slideController;
+  double _offsetX = 0.0;
+  bool _isSwiping = false;
+
+  static const double _swipeThreshold = 100.0;
+  static const double _velocityThreshold = 800.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _offsetX += details.delta.dx;
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    if (velocity > _velocityThreshold || _offsetX > _swipeThreshold) {
+      // Swipe right → Know
+      _animateOffScreen(screenWidth, true);
+    } else if (velocity < -_velocityThreshold || _offsetX < -_swipeThreshold) {
+      // Swipe left → Don't Know
+      _animateOffScreen(-screenWidth, false);
+    } else {
+      // Snap back
+      _animateSnapBack();
+    }
+  }
+
+  void _animateOffScreen(double targetX, bool know) {
+    final startX = _offsetX;
+    _isSwiping = true;
+
+    _slideController.reset();
+    _slideController.forward().then((_) {
+      _isSwiping = false;
+      _offsetX = 0.0;
+      _answer(know);
+    });
+
+    _slideController.addListener(_buildSlideListener(startX, targetX));
+  }
+
+  VoidCallback _buildSlideListener(double startX, double targetX) {
+    late final VoidCallback listener;
+    listener = () {
+      setState(() {
+        _offsetX = startX + (targetX - startX) * _slideController.value;
+      });
+      if (_slideController.isCompleted || !_isSwiping) {
+        _slideController.removeListener(listener);
+      }
+    };
+    return listener;
+  }
+
+  void _animateSnapBack() {
+    final startX = _offsetX;
+    _isSwiping = true;
+
+    _slideController.reset();
+    _slideController.forward().then((_) {
+      _isSwiping = false;
+    });
+
+    _slideController.addListener(_buildSlideListener(startX, 0.0));
+  }
+
   @override
   Widget build(BuildContext context) {
     final termsAsync = ref.watch(termsProvider);
     final progress = ref.watch(progressProvider);
 
     return Scaffold(
-      body: SafeArea(
+      body: StarField(
+        starCount: 20,
+        showShootingStars: false,
+        child: SafeArea(
         child: termsAsync.when(
           data: (allTerms) {
             if (_reviewTerms.isEmpty && !_finished) {
               final completed = allTerms
                   .where((t) => progress.completedTermIds.contains(t.id))
                   .toList();
+              // Sort by SRS: due terms first, then by confidence (low first)
               completed.sort((a, b) {
+                final aDue = progress.isDueForReview(a.id);
+                final bDue = progress.isDueForReview(b.id);
+                if (aDue != bDue) return aDue ? -1 : 1;
                 final confA = progress.getConfidence(a.id);
                 final confB = progress.getConfidence(b.id);
                 return confA.compareTo(confB);
@@ -59,6 +151,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 style: AppTextStyles.label.copyWith(color: AppColors.error)),
           ),
         ),
+      ),
       ),
     );
   }
@@ -156,42 +249,67 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _showAnswer = true),
-              child: FrameContainer(
-                label: '${term.category} / WEEK ${term.week}',
-                child: Center(
-                  child: _showAnswer
-                      ? SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(term.termKo, style: AppTextStyles.h1, textAlign: TextAlign.center),
-                              const SizedBox(height: Spacing.sm),
-                              Text(term.termEn, style: AppTextStyles.mono, textAlign: TextAlign.center),
-                              const SizedBox(height: Spacing.xl),
-                              Text(
-                                term.definitionShort,
-                                style: AppTextStyles.body.copyWith(
-                                  color: AppColors.textSecondary,
-                                  height: 1.6,
+              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
+              child: Transform.translate(
+                offset: Offset(_offsetX, 0),
+                child: Stack(
+                  children: [
+                    FrameContainer(
+                      label: '${term.category} / WEEK ${term.week}',
+                      child: Center(
+                        child: _showAnswer
+                            ? SingleChildScrollView(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(term.termKo, style: AppTextStyles.h1, textAlign: TextAlign.center),
+                                    const SizedBox(height: Spacing.sm),
+                                    Text(term.termEn, style: AppTextStyles.mono, textAlign: TextAlign.center),
+                                    const SizedBox(height: Spacing.xl),
+                                    Text(
+                                      term.definitionShort,
+                                      style: AppTextStyles.body.copyWith(
+                                        color: AppColors.textSecondary,
+                                        height: 1.6,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
                                 ),
-                                textAlign: TextAlign.center,
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(term.termKo, style: AppTextStyles.h1, textAlign: TextAlign.center),
+                                  const SizedBox(height: Spacing.md),
+                                  Text(term.termEn, style: AppTextStyles.mono, textAlign: TextAlign.center),
+                                  const SizedBox(height: Spacing.xxl),
+                                  Text(
+                                    'TAP TO REVEAL',
+                                    style: AppTextStyles.label.copyWith(color: AppColors.textMuted),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(term.termKo, style: AppTextStyles.h1, textAlign: TextAlign.center),
-                            const SizedBox(height: Spacing.md),
-                            Text(term.termEn, style: AppTextStyles.mono, textAlign: TextAlign.center),
-                            const SizedBox(height: Spacing.xxl),
-                            Text(
-                              'TAP TO REVEAL',
-                              style: AppTextStyles.label.copyWith(color: AppColors.textMuted),
+                      ),
+                    ),
+                    // Swipe direction hint overlay
+                    if (_offsetX.abs() > 20)
+                      Positioned.fill(
+                        child: Align(
+                          alignment: _offsetX > 0 ? Alignment.centerLeft : Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                            child: Text(
+                              _offsetX > 0 ? '알고 있어요' : '모르겠어요',
+                              style: AppTextStyles.labelColored(
+                                _offsetX > 0 ? AppColors.success : AppColors.error,
+                              ),
                             ),
-                          ],
+                          ),
                         ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -272,11 +390,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
 
     if (_currentIndex + 1 >= _reviewTerms.length) {
-      setState(() => _finished = true);
+      setState(() {
+        _finished = true;
+        _offsetX = 0.0;
+      });
     } else {
       setState(() {
         _currentIndex++;
         _showAnswer = false;
+        _offsetX = 0.0;
       });
     }
   }

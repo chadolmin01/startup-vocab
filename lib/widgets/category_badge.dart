@@ -22,11 +22,8 @@ class CategoryBadge extends StatelessWidget {
       ),
       child: Text(
         category.toUpperCase(),
-        style: TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 9,
+        style: AppTextStyles.labelColored(color).copyWith(
           fontWeight: FontWeight.w600,
-          color: color,
           letterSpacing: 1.5,
         ),
       ),

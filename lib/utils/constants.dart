@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // ─── Design Tokens ───────────────────────────────────────────
 
@@ -153,6 +154,15 @@ class AppConstants {
   static const double cardBorderRadius = 4.0;
   static const Duration flipDuration = Duration(milliseconds: 300);
 
-  static const String supabaseUrl = 'https://kqevvmzxaatpjzfyecul.supabase.co';
-  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZXZ2bXp4YWF0cGp6ZnllY3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzg5NTAsImV4cCI6MjA4ODYxNDk1MH0.DLRNGQDC3t3pzh-QyuvINQTj5q6Sk9ZJL5xBsSejf0Y';
+  // Quiz / SRS constants
+  static const int maxConfidence = 3;
+  static const int minDailyGoal = 1;
+  static const int maxDailyGoal = 20;
+  static const int quizWrongAnswerCount = 3;
+
+  // Supabase — loaded from .env
+  static String get supabaseUrl =>
+      dotenv.env['SUPABASE_URL'] ?? 'YOUR_SUPABASE_URL';
+  static String get supabaseAnonKey =>
+      dotenv.env['SUPABASE_ANON_KEY'] ?? 'YOUR_SUPABASE_ANON_KEY';
 }

@@ -11,6 +11,7 @@ import '../widgets/term_card.dart';
 import '../widgets/streak_counter.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/star_field.dart';
+import '../widgets/celebration_overlay.dart';
 import '../services/widget_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
   bool _initialized = false;
   int? _lastWidgetTermId;
+  bool _showCelebration = false;
+  bool _wasGoalReached = false;
 
   List<Term> _getStudyQueue(List<Term> allTerms, Set<int> completedIds) {
     final firstLaunch = ref.read(firstLaunchDateProvider);
@@ -46,8 +49,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final firstLaunch = ref.watch(firstLaunchDateProvider);
     final dayNumber = AppDateUtils.getDayNumber(firstLaunch);
 
+    // Detect daily goal just reached
+    if (progress.isDailyGoalReached && !_wasGoalReached) {
+      _wasGoalReached = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _showCelebration = true);
+        Future.delayed(const Duration(milliseconds: 1600), () {
+          if (mounted) setState(() => _showCelebration = false);
+        });
+      });
+    } else if (!progress.isDailyGoalReached) {
+      _wasGoalReached = false;
+    }
+
     return Scaffold(
-      body: StarField(
+      body: CelebrationOverlay(
+        trigger: _showCelebration,
+        child: StarField(
         starCount: 50,
         child: SafeArea(
           child: termsAsync.when(
@@ -118,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: Spacing.sm),
                   // Card
                   Expanded(
-                    child: TermCard(term: term),
+                    child: TermCard(key: ValueKey(term.id), term: term),
                   ),
                   const SizedBox(height: Spacing.lg),
                   // Actions
@@ -128,46 +146,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              ref
-                                  .read(progressProvider.notifier)
-                                  .markCompleted(term.id);
-                              if (queue.length > 1) {
-                                Future.delayed(
-                                  const Duration(milliseconds: 300),
-                                  () {
-                                    if (mounted) setState(() {});
-                                  },
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.success,
-                              foregroundColor: Colors.black,
+                          child: Semantics(
+                            button: true,
+                            label: '이해했어요 - 학습 완료로 표시',
+                            child: ElevatedButton(
+                              onPressed: () {
+                                ref
+                                    .read(progressProvider.notifier)
+                                    .markCompleted(term.id);
+                                if (queue.length > 1) {
+                                  Future.delayed(
+                                    const Duration(milliseconds: 300),
+                                    () {
+                                      if (mounted) setState(() {});
+                                    },
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.success,
+                                foregroundColor: Colors.black,
+                              ),
+                              child: const Text('이해했어요'),
                             ),
-                            child: const Text('이해했어요'),
                           ),
                         ),
                         const SizedBox(width: Spacing.sm),
                         Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              ref
-                                  .read(progressProvider.notifier)
-                                  .markForReview(term.id);
-                              if (queue.length > 1) {
-                                setState(() {
-                                  _currentIndex =
-                                      (_currentIndex + 1) % queue.length;
-                                });
-                              }
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.warning,
-                              side: const BorderSide(color: AppColors.warning),
+                          child: Semantics(
+                            button: true,
+                            label: '다시 볼래요 - 복습 목록에 추가',
+                            child: OutlinedButton(
+                              onPressed: () {
+                                ref
+                                    .read(progressProvider.notifier)
+                                    .markForReview(term.id);
+                                ScaffoldMessenger.of(context)
+                                  ..clearSnackBars()
+                                  ..showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.bookmark_added,
+                                              color: AppColors.warning, size: 18),
+                                          const SizedBox(width: Spacing.sm),
+                                          Text(
+                                            '복습 목록에 추가했어요',
+                                            style: AppTextStyles.body.copyWith(
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: AppColors.cardBackground,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: const Duration(milliseconds: 1500),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        side: const BorderSide(color: AppColors.warning, width: 0.5),
+                                      ),
+                                    ),
+                                  );
+                                if (queue.length > 1) {
+                                  setState(() {
+                                    _currentIndex =
+                                        (_currentIndex + 1) % queue.length;
+                                  });
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.warning,
+                                side: const BorderSide(color: AppColors.warning),
+                              ),
+                              child: const Text('다시 볼래요'),
                             ),
-                            child: const Text('다시 볼래요'),
                           ),
                         ),
                       ],
@@ -182,6 +234,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 style: AppTextStyles.label.copyWith(color: AppColors.error)),
           ),
         ),
+      ),
       ),
       ),
     );

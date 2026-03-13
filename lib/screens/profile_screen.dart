@@ -8,6 +8,7 @@ import '../utils/constants.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/radar_chart_widget.dart';
 import '../widgets/progress_bar.dart';
+import '../widgets/star_field.dart';
 import 'leaderboard_screen.dart';
 import 'settings_screen.dart';
 import 'term_detail_screen.dart';
@@ -23,8 +24,11 @@ class ProfileScreen extends ConsumerWidget {
     final termsAsync = ref.watch(termsProvider);
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: StarField(
+        starCount: 30,
+        showShootingStars: false,
+        child: SafeArea(
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(Spacing.screenPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,6 +190,7 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

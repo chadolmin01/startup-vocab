@@ -44,61 +44,63 @@ class QuizOptionTile extends StatelessWidget {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Spacing.sm),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: hasAnswered ? null : onTap,
-          borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.lg,
-              vertical: Spacing.md,
-            ),
-            decoration: BoxDecoration(
-              border: Border.all(color: borderColor),
-              borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
-              color: bgColor,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: indexColor),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Center(
-                    child: Text(
-                      String.fromCharCode(65 + index),
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: indexColor,
+    return Semantics(
+      label: '선택지 ${String.fromCharCode(65 + index)}: $text',
+      button: true,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: Spacing.sm),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: hasAnswered ? null : onTap,
+            borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.lg,
+                vertical: Spacing.md,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(color: borderColor),
+                borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+                color: bgColor,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: indexColor),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Center(
+                      child: Text(
+                        String.fromCharCode(65 + index),
+                        style: AppTextStyles.mono.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: indexColor,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: Spacing.md),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: textColor,
-                      height: 1.4,
+                  const SizedBox(width: Spacing.md),
+                  Expanded(
+                    child: Text(
+                      text,
+                      style: AppTextStyles.body.copyWith(
+                        color: textColor,
+                        height: 1.4,
+                      ),
                     ),
                   ),
-                ),
-                if (hasAnswered && isCorrect)
-                  const Icon(Icons.check, color: AppColors.success, size: 18),
-                if (hasAnswered && isSelected && !isCorrect)
-                  const Icon(Icons.close, color: AppColors.error, size: 18),
-              ],
+                  if (hasAnswered && isCorrect)
+                    const Icon(Icons.check, color: AppColors.success, size: 18),
+                  if (hasAnswered && isSelected && !isCorrect)
+                    const Icon(Icons.close, color: AppColors.error, size: 18),
+                ],
+              ),
             ),
           ),
         ),

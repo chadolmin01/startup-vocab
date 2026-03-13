@@ -7,6 +7,7 @@ import 'screens/review_screen.dart';
 import 'screens/dictionary_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/nickname_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
@@ -38,6 +39,7 @@ class _SplashGate extends ConsumerStatefulWidget {
 
 class _SplashGateState extends ConsumerState<_SplashGate> {
   bool _splashDone = false;
+  bool _showOnboarding = false;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +53,22 @@ class _SplashGateState extends ConsumerState<_SplashGate> {
 
     final prefs = ref.watch(sharedPreferencesProvider);
     final hasNickname = prefs.getString(SPKeys.nickname) != null;
-    return hasNickname ? const MainShell() : const NicknameScreen();
+
+    if (!hasNickname) {
+      return const NicknameScreen();
+    }
+
+    final onboardingDone = prefs.getBool('onboarding_done') ?? false;
+    if (!onboardingDone && !_showOnboarding) {
+      // Show onboarding for users who haven't seen it
+      return OnboardingScreen(
+        onComplete: () {
+          if (mounted) setState(() => _showOnboarding = true);
+        },
+      );
+    }
+
+    return const MainShell();
   }
 }
 

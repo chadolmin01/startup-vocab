@@ -7,6 +7,7 @@ import '../models/term.dart';
 import '../utils/constants.dart';
 import '../widgets/category_badge.dart';
 import '../widgets/progress_bar.dart';
+import '../widgets/star_field.dart';
 import 'term_detail_screen.dart';
 
 class DictionaryScreen extends ConsumerStatefulWidget {
@@ -32,8 +33,11 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
     final termsByWeekAsync = ref.watch(termsByWeekProvider);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
+      body: StarField(
+        starCount: 30,
+        showShootingStars: false,
+        child: SafeArea(
+          child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(Spacing.screenPadding),
@@ -91,6 +95,7 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

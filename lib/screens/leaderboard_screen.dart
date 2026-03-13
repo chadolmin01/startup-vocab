@@ -5,6 +5,7 @@ import '../providers/progress_provider.dart';
 import '../services/supabase_service.dart';
 import '../utils/constants.dart';
 import '../widgets/glass_container.dart';
+import '../widgets/star_field.dart';
 
 class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
@@ -24,8 +25,11 @@ class LeaderboardScreen extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(
-        child: !SupabaseService.isAvailable
+      body: StarField(
+        starCount: 30,
+        showShootingStars: false,
+        child: SafeArea(
+          child: !SupabaseService.isAvailable
             ? Center(
                 child: Padding(
                   padding: const EdgeInsets.all(Spacing.screenPadding),
@@ -106,15 +110,40 @@ class LeaderboardScreen extends ConsumerWidget {
                         loading: () =>
                             const Center(child: CircularProgressIndicator()),
                         error: (e, _) => Center(
-                          child: Text('ERROR: $e',
-                              style: AppTextStyles.label
-                                  .copyWith(color: AppColors.error)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(Spacing.screenPadding),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.wifi_off, size: 32, color: AppColors.textMuted),
+                                const SizedBox(height: Spacing.lg),
+                                Text(
+                                  '데이터를 불러올 수 없습니다',
+                                  style: AppTextStyles.body.copyWith(color: AppColors.error),
+                                ),
+                                const SizedBox(height: Spacing.sm),
+                                Text(
+                                  '네트워크 연결을 확인해주세요',
+                                  style: AppTextStyles.small,
+                                ),
+                                const SizedBox(height: Spacing.lg),
+                                OutlinedButton(
+                                  onPressed: () {
+                                    ref.invalidate(leaderboardProvider);
+                                    ref.invalidate(userRankProvider);
+                                  },
+                                  child: const Text('다시 시도'),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+      ),
       ),
     );
   }
@@ -148,8 +177,7 @@ class LeaderboardScreen extends ConsumerWidget {
           width: 32,
           child: Text(
             '#$rank',
-            style: TextStyle(
-              fontFamily: 'monospace',
+            style: AppTextStyles.mono.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w800,
               color: rankColor,
@@ -158,8 +186,7 @@ class LeaderboardScreen extends ConsumerWidget {
         ),
         title: Text(
           entry['nickname'] ?? '???',
-          style: TextStyle(
-            fontSize: 14,
+          style: AppTextStyles.body.copyWith(
             fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
             color: isMe ? AppColors.accent : AppColors.textPrimary,
           ),
@@ -170,10 +197,8 @@ class LeaderboardScreen extends ConsumerWidget {
         ),
         trailing: Text(
           '${entry['total_score'] ?? 0}',
-          style: TextStyle(
-            fontFamily: 'monospace',
+          style: AppTextStyles.stat.copyWith(
             fontSize: 16,
-            fontWeight: FontWeight.w800,
             color: isMe ? AppColors.accent : AppColors.textPrimary,
           ),
         ),

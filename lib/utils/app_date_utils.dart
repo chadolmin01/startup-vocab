@@ -1,3 +1,5 @@
+import 'constants.dart';
+
 class AppDateUtils {
   static int getTodayTermIndex(DateTime firstLaunchDate) {
     final now = DateTime.now();
@@ -8,7 +10,7 @@ class AppDateUtils {
       firstLaunchDate.day,
     );
     final daysSinceStart = today.difference(start).inDays;
-    return daysSinceStart % 63; // 63일 순환
+    return daysSinceStart % AppConstants.totalTerms;
   }
 
   static int getDayNumber(DateTime firstLaunchDate) {
@@ -34,5 +36,11 @@ class AppDateUtils {
     if (isToday(lastStudyDate)) return currentStreak;
     if (isYesterday(lastStudyDate)) return currentStreak;
     return 0; // 2일 이상 미학습 → 리셋
+  }
+
+  /// Formatted date string for today: yyyy-MM-dd
+  static String todayStr() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 }

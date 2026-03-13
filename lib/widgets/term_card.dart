@@ -19,12 +19,15 @@ class TermCard extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final cardHeight = screenHeight * 0.5;
 
-    return FlipCard(
-      key: flipKey,
-      direction: FlipDirection.HORIZONTAL,
-      speed: 300,
-      front: _buildFront(cardHeight),
-      back: _buildBack(cardHeight),
+    return Semantics(
+      label: '${term.termKo} 카드. 탭하여 뒤집기',
+      child: FlipCard(
+        key: flipKey,
+        direction: FlipDirection.HORIZONTAL,
+        speed: 300,
+        front: _buildFront(cardHeight),
+        back: _buildBack(cardHeight),
+      ),
     );
   }
 

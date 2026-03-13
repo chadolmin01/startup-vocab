@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import '../providers/quiz_provider.dart';
@@ -8,6 +11,8 @@ import '../utils/constants.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/quiz_option_tile.dart';
 import '../widgets/progress_bar.dart';
+import '../widgets/star_field.dart';
+import '../widgets/celebration_overlay.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({super.key});
@@ -16,8 +21,55 @@ class QuizScreen extends ConsumerStatefulWidget {
   ConsumerState<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends ConsumerState<QuizScreen> {
+class _QuizScreenState extends ConsumerState<QuizScreen>
+    with SingleTickerProviderStateMixin {
   bool _started = false;
+  bool _showResultCelebration = false;
+
+  late final AnimationController _shakeController;
+  Color? _feedbackColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shakeController.dispose();
+    super.dispose();
+  }
+
+  void _onAnswerSelected(int index) {
+    final quizState = ref.read(quizProvider);
+    if (quizState.selectedAnswer != null) return;
+
+    final question = quizState.currentQuestion;
+    if (question == null) return;
+
+    ref.read(quizProvider.notifier).submitAnswer(index);
+
+    final isCorrect = index == question.correctIndex;
+
+    if (isCorrect) {
+      HapticFeedback.lightImpact();
+      setState(() => _feedbackColor = AppColors.success);
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) setState(() => _feedbackColor = null);
+      });
+    } else {
+      HapticFeedback.heavyImpact();
+      setState(() => _feedbackColor = AppColors.error);
+      _shakeController.forward(from: 0);
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) setState(() => _feedbackColor = null);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +87,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     }
 
     if (quizState.isFinished) {
+      // Trigger celebration for high scores (>=80%)
+      if (!_showResultCelebration && quizState.totalQuestions > 0) {
+        final accuracy = quizState.correctCount / quizState.totalQuestions;
+        if (accuracy >= 0.8) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _showResultCelebration = true);
+          });
+        }
+      }
       return _buildResultScreen(quizState);
     }
 
@@ -43,46 +104,50 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
   Widget _buildNotEnoughTerms(StudyProgress progress) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.screenPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('QUIZ', style: AppTextStyles.labelColored(AppColors.accent)),
-              const SizedBox(height: Spacing.xs),
-              const Text('퀴즈 모드', style: AppTextStyles.h2),
-              const SizedBox(height: Spacing.lg),
-              Expanded(
-                child: FrameContainer(
-                  label: 'STATUS // LOCKED',
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.lock_outline, size: 32, color: AppColors.textMuted),
-                        const SizedBox(height: Spacing.lg),
-                        Text(
-                          '용어를 ${AppConstants.quizMinTerms}개 이상 학습하면\n퀴즈에 도전할 수 있어요',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.bodySecondary,
-                        ),
-                        const SizedBox(height: Spacing.xl),
-                        Text(
-                          '${progress.completedTermIds.length} / ${AppConstants.quizMinTerms}',
-                          style: AppTextStyles.stat.copyWith(color: AppColors.accent),
-                        ),
-                        const SizedBox(height: Spacing.sm),
-                        ProgressBar(
-                          percent: progress.completedTermIds.length / AppConstants.quizMinTerms,
-                          progressColor: AppColors.accent,
-                        ),
-                      ],
+      body: StarField(
+        starCount: 20,
+        showShootingStars: false,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.screenPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('QUIZ', style: AppTextStyles.labelColored(AppColors.accent)),
+                const SizedBox(height: Spacing.xs),
+                const Text('퀴즈 모드', style: AppTextStyles.h2),
+                const SizedBox(height: Spacing.lg),
+                Expanded(
+                  child: FrameContainer(
+                    label: 'STATUS // LOCKED',
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.lock_outline, size: 32, color: AppColors.textMuted),
+                          const SizedBox(height: Spacing.lg),
+                          Text(
+                            '용어를 ${AppConstants.quizMinTerms}개 이상 학습하면\n퀴즈에 도전할 수 있어요',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodySecondary,
+                          ),
+                          const SizedBox(height: Spacing.xl),
+                          Text(
+                            '${progress.completedTermIds.length} / ${AppConstants.quizMinTerms}',
+                            style: AppTextStyles.stat.copyWith(color: AppColors.accent),
+                          ),
+                          const SizedBox(height: Spacing.sm),
+                          ProgressBar(
+                            percent: progress.completedTermIds.length / AppConstants.quizMinTerms,
+                            progressColor: AppColors.accent,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -93,8 +158,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final hasWrongTerms = progress.wrongTermIds.isNotEmpty;
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
+      body: StarField(
+        starCount: 20,
+        showShootingStars: false,
+        child: SafeArea(
+          child: Padding(
           padding: const EdgeInsets.all(Spacing.screenPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,6 +231,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -172,82 +241,134 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.screenPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(Spacing.screenPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Q${quizState.currentIndex + 1} / ${quizState.totalQuestions}',
-                    style: AppTextStyles.labelBright,
-                  ),
-                  Text(
-                    '${quizState.correctCount} CORRECT',
-                    style: AppTextStyles.labelColored(AppColors.success),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Spacing.sm),
-              ProgressBar(
-                percent: (quizState.currentIndex + 1) /
-                    quizState.totalQuestions,
-                progressColor: AppColors.accent,
-              ),
-              const SizedBox(height: Spacing.lg),
-              // Question
-              FrameContainer(
-                label: question.questionBody.isEmpty
-                    ? 'QUESTION'
-                    : 'QUESTION // ${question.term.termKo}',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(question.questionText, style: AppTextStyles.h3),
-                    if (question.questionBody.isNotEmpty) ...[
-                      const SizedBox(height: Spacing.md),
-                      Text(question.questionBody, style: AppTextStyles.bodySecondary),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: Spacing.lg),
-              // Options
-              Expanded(
-                child: ListView.builder(
-                  itemCount: question.options.length,
-                  itemBuilder: (context, index) {
-                    return QuizOptionTile(
-                      text: question.options[index],
-                      index: index,
-                      selectedAnswer: quizState.selectedAnswer,
-                      correctIndex: question.correctIndex,
-                      onTap: () {
-                        ref.read(quizProvider.notifier).submitAnswer(index);
+                  // Animated question content
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 350),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) {
+                        final offsetAnimation = Tween<Offset>(
+                          begin: const Offset(0.05, 0),
+                          end: Offset.zero,
+                        ).animate(animation);
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          ),
+                        );
                       },
-                    );
-                  },
-                ),
-              ),
-              if (quizState.selectedAnswer != null)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      ref.read(quizProvider.notifier).nextQuestion();
-                    },
-                    child: Text(
-                      quizState.currentIndex + 1 >= quizState.totalQuestions
-                          ? '결과 보기'
-                          : '다음 문제',
+                      child: AnimatedBuilder(
+                        key: ValueKey(quizState.currentIndex),
+                        animation: _shakeController,
+                        builder: (context, child) {
+                          final shakeOffset = _shakeController.isAnimating
+                              ? math.sin(_shakeController.value * math.pi * 4) * 8
+                              : 0.0;
+                          return Transform.translate(
+                            offset: Offset(shakeOffset, 0),
+                            child: child,
+                          );
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Q${quizState.currentIndex + 1} / ${quizState.totalQuestions}',
+                                  style: AppTextStyles.labelBright,
+                                ),
+                                Text(
+                                  '${quizState.correctCount} CORRECT',
+                                  style: AppTextStyles.labelColored(AppColors.success),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: Spacing.sm),
+                            ProgressBar(
+                              percent: (quizState.currentIndex + 1) /
+                                  quizState.totalQuestions,
+                              progressColor: AppColors.accent,
+                            ),
+                            const SizedBox(height: Spacing.lg),
+                            // Question
+                            FrameContainer(
+                              label: question.questionBody.isEmpty
+                                  ? 'QUESTION'
+                                  : 'QUESTION // ${question.term.termKo}',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(question.questionText, style: AppTextStyles.h3),
+                                  if (question.questionBody.isNotEmpty) ...[
+                                    const SizedBox(height: Spacing.md),
+                                    Text(question.questionBody, style: AppTextStyles.bodySecondary),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: Spacing.lg),
+                            // Options
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: question.options.length,
+                                itemBuilder: (context, index) {
+                                  return QuizOptionTile(
+                                    text: question.options[index],
+                                    index: index,
+                                    selectedAnswer: quizState.selectedAnswer,
+                                    correctIndex: question.correctIndex,
+                                    onTap: () => _onAnswerSelected(index),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
+                  if (quizState.selectedAnswer != null)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          ref.read(quizProvider.notifier).nextQuestion();
+                        },
+                        child: Text(
+                          quizState.currentIndex + 1 >= quizState.totalQuestions
+                              ? '결과 보기'
+                              : '다음 문제',
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Feedback color overlay
+            if (_feedbackColor != null)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: _feedbackColor != null ? 0.12 : 0.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(color: _feedbackColor),
+                  ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -258,9 +379,16 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         ? quizState.correctCount / quizState.totalQuestions
         : 0.0;
     final resultColor = accuracy >= 0.7 ? AppColors.success : AppColors.warning;
+    final isExcellent = accuracy >= 0.8;
 
     return Scaffold(
-      body: SafeArea(
+      body: CelebrationOverlay(
+        trigger: _showResultCelebration,
+        particleCount: 30,
+        child: StarField(
+          starCount: 20,
+          showShootingStars: false,
+          child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(Spacing.screenPadding),
           child: Column(
@@ -295,6 +423,16 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                           '${quizState.correctCount} / ${quizState.totalQuestions} 정답',
                           style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                         ),
+                        if (isExcellent) ...[
+                          const SizedBox(height: Spacing.md),
+                          Text(
+                            'EXCELLENT!',
+                            style: AppTextStyles.labelColored(AppColors.success).copyWith(
+                              fontSize: 14,
+                              letterSpacing: 3,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -306,7 +444,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     ref.read(quizProvider.notifier).reset();
-                    setState(() => _started = false);
+                    setState(() {
+                      _started = false;
+                      _showResultCelebration = false;
+                    });
                   },
                   child: const Text('다시 도전'),
                 ),
@@ -314,6 +455,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             ],
           ),
         ),
+      ),
+      ),
       ),
     );
   }

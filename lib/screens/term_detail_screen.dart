@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/term.dart';
 import '../providers/progress_provider.dart';
 import '../utils/constants.dart';
+import '../widgets/star_field.dart';
 import '../widgets/term_card.dart';
 
 class TermDetailScreen extends ConsumerWidget {
@@ -23,8 +24,11 @@ class TermDetailScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
+      body: StarField(
+        starCount: 30,
+        showShootingStars: false,
+        child: SafeArea(
+          child: Padding(
           padding: const EdgeInsets.all(Spacing.screenPadding),
           child: Column(
             children: [
@@ -92,6 +96,7 @@ class TermDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

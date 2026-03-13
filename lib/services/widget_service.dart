@@ -3,6 +3,8 @@ import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/term.dart';
 import '../utils/constants.dart';
+import '../utils/app_date_utils.dart';
+import '../utils/logger.dart';
 
 class WidgetService {
   static const _appGroupId = 'com.odysseyventures.startup_bite';
@@ -62,7 +64,7 @@ Future<void> _handleMarkComplete(SharedPreferences prefs) async {
     completedIds.add(idStr);
     await prefs.setStringList(SPKeys.completedTermIds, completedIds);
 
-    final today = _todayStr();
+    final today = AppDateUtils.todayStr();
     final savedDate = prefs.getString(SPKeys.todayDate) ?? '';
     int count = savedDate == today
         ? (prefs.getInt(SPKeys.todayLearnedCount) ?? 0)
@@ -92,7 +94,7 @@ Future<void> _advanceWidgetTerm(SharedPreferences prefs) async {
       ? (DateTime.tryParse(firstLaunchStr) ?? DateTime.now())
       : DateTime.now();
 
-  final todayIndex = _getTodayTermIndex(firstLaunch);
+  final todayIndex = AppDateUtils.getTodayTermIndex(firstLaunch);
   final currentWidgetIndex = prefs.getInt(SPKeys.widgetTermIndex) ?? 0;
 
   int nextIdx = -1;
@@ -137,54 +139,27 @@ List<Map<String, dynamic>> _loadTermsFromCache(SharedPreferences prefs) {
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     final termsList = jsonData['terms'] as List;
     return termsList.cast<Map<String, dynamic>>();
-  } catch (_) {
+  } catch (e) {
+    AppLogger.error('widgetService:loadTermsFromCache', e);
     return [];
   }
-}
-
-int _getTodayTermIndex(DateTime firstLaunchDate) {
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final start = DateTime(
-    firstLaunchDate.year,
-    firstLaunchDate.month,
-    firstLaunchDate.day,
-  );
-  final daysSinceStart = today.difference(start).inDays;
-  return daysSinceStart % AppConstants.totalTerms;
-}
-
-String _todayStr() {
-  final now = DateTime.now();
-  return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 }
 
 Future<void> _updateStreak(SharedPreferences prefs) async {
   final lastStudyStr = prefs.getString(SPKeys.lastStudyDate);
   final currentStreak = prefs.getInt(SPKeys.streak) ?? 0;
   final now = DateTime.now();
+  final lastStudy = lastStudyStr != null ? DateTime.tryParse(lastStudyStr) : null;
 
   int newStreak;
-  if (lastStudyStr == null) {
+  if (lastStudy == null) {
     newStreak = 1;
+  } else if (AppDateUtils.isToday(lastStudy)) {
+    newStreak = currentStreak;
+  } else if (AppDateUtils.isYesterday(lastStudy)) {
+    newStreak = currentStreak + 1;
   } else {
-    final lastStudy = DateTime.tryParse(lastStudyStr);
-    if (lastStudy == null) {
-      newStreak = 1;
-    } else {
-      final lastDate =
-          DateTime(lastStudy.year, lastStudy.month, lastStudy.day);
-      final today = DateTime(now.year, now.month, now.day);
-      final diff = today.difference(lastDate).inDays;
-
-      if (diff == 0) {
-        newStreak = currentStreak;
-      } else if (diff == 1) {
-        newStreak = currentStreak + 1;
-      } else {
-        newStreak = 1;
-      }
-    }
+    newStreak = 1;
   }
 
   await prefs.setInt(SPKeys.streak, newStreak);

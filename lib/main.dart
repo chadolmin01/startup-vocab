@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/progress_provider.dart';
@@ -9,10 +10,14 @@ import 'services/notification_service.dart';
 import 'services/supabase_service.dart';
 import 'services/widget_service.dart';
 import 'utils/constants.dart';
+import 'utils/logger.dart';
 import 'app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: '.env');
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -28,7 +33,9 @@ void main() async {
       final termsJson =
           await rootBundle.loadString('assets/data/terms.json');
       await WidgetService.cacheTermsData(termsJson);
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('main:widgetInit', e);
+    }
 
     // Initialize notifications
     await NotificationService.initialize();

@@ -35,6 +35,7 @@ class _NicknameScreenState extends ConsumerState<NicknameScreen> {
     // firstLaunchDate is already set in main.dart — don't overwrite
 
     if (mounted) {
+      // Navigate to onboarding (or main if already done)
       Navigator.of(context).pushReplacementNamed('/main');
     }
   }

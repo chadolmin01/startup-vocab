@@ -15,6 +15,9 @@ class StudyProgress {
   // SRS confidence: 0=new, 1=wrong, 2=correct once, 3=mastered
   final Map<int, int> termConfidence;
 
+  // SRS next review dates: termId → DateTime
+  final Map<int, DateTime> nextReviewDates;
+
   // Wrong answer tracking
   final Set<int> wrongTermIds;
 
@@ -28,6 +31,7 @@ class StudyProgress {
     this.todayLearnedCount = 0,
     this.todayDate = '',
     this.termConfidence = const {},
+    this.nextReviewDates = const {},
     this.wrongTermIds = const {},
   });
 
@@ -39,6 +43,24 @@ class StudyProgress {
       dailyGoal > 0 ? (todayLearnedCount / dailyGoal).clamp(0.0, 1.0) : 0.0;
 
   int getConfidence(int termId) => termConfidence[termId] ?? 0;
+
+  /// SRS intervals by confidence level
+  static Duration srsInterval(int confidence) {
+    switch (confidence) {
+      case 0: return Duration.zero;           // Immediate
+      case 1: return const Duration(days: 1); // 1 day
+      case 2: return const Duration(days: 3); // 3 days
+      case 3: return const Duration(days: 7); // 7 days
+      default: return const Duration(days: 7);
+    }
+  }
+
+  /// Returns true if a term is due for review
+  bool isDueForReview(int termId) {
+    final nextDate = nextReviewDates[termId];
+    if (nextDate == null) return true; // Never reviewed = due
+    return DateTime.now().isAfter(nextDate);
+  }
 
   double get averageQuizAccuracy {
     if (quizHistory.isEmpty) return 0.0;
@@ -65,6 +87,7 @@ class StudyProgress {
     int? todayLearnedCount,
     String? todayDate,
     Map<int, int>? termConfidence,
+    Map<int, DateTime>? nextReviewDates,
     Set<int>? wrongTermIds,
   }) {
     return StudyProgress(
@@ -77,6 +100,7 @@ class StudyProgress {
       todayLearnedCount: todayLearnedCount ?? this.todayLearnedCount,
       todayDate: todayDate ?? this.todayDate,
       termConfidence: termConfidence ?? this.termConfidence,
+      nextReviewDates: nextReviewDates ?? this.nextReviewDates,
       wrongTermIds: wrongTermIds ?? this.wrongTermIds,
     );
   }

@@ -5,6 +5,7 @@ import '../models/quiz_result.dart';
 import '../models/study_progress.dart';
 import '../utils/constants.dart';
 import '../utils/app_date_utils.dart';
+import '../utils/logger.dart';
 import '../services/supabase_service.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -24,10 +25,7 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     _loadFromPrefs();
   }
 
-  static String _todayStr() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
+  static String _todayStr() => AppDateUtils.todayStr();
 
   void _loadFromPrefs() {
     final completedIds = _prefs.getStringList(SPKeys.completedTermIds) ?? [];
@@ -57,7 +55,8 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
         .map((s) {
           try {
             return QuizResult.fromJson(json.decode(s) as Map<String, dynamic>);
-          } catch (_) {
+          } catch (e) {
+            AppLogger.error('ProgressNotifier:parseQuizHistory', e);
             return null;
           }
         })
@@ -70,6 +69,19 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     final today = _todayStr();
     final todayCount = savedTodayDate == today ? savedTodayCount : 0;
 
+    // Load next review dates
+    final reviewDatesStr = _prefs.getString('next_review_dates');
+    final Map<int, DateTime> nextReviewDates = {};
+    if (reviewDatesStr != null) {
+      final decoded = json.decode(reviewDatesStr) as Map<String, dynamic>;
+      for (final entry in decoded.entries) {
+        final dt = DateTime.tryParse(entry.value as String);
+        if (dt != null) {
+          nextReviewDates[int.parse(entry.key)] = dt;
+        }
+      }
+    }
+
     state = StudyProgress(
       completedTermIds: completedIds.map((s) => int.tryParse(s)).whereType<int>().toSet(),
       reviewTermIds: reviewIds.map((s) => int.tryParse(s)).whereType<int>().toSet(),
@@ -80,6 +92,7 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
       todayLearnedCount: todayCount,
       todayDate: today,
       termConfidence: confidence,
+      nextReviewDates: nextReviewDates,
       wrongTermIds: wrongIds.map((s) => int.tryParse(s)).whereType<int>().toSet(),
     );
 
@@ -126,7 +139,7 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
   }
 
   Future<void> setDailyGoal(int goal) async {
-    state = state.copyWith(dailyGoal: goal.clamp(1, 20));
+    state = state.copyWith(dailyGoal: goal.clamp(AppConstants.minDailyGoal, AppConstants.maxDailyGoal));
     await _saveToPrefs();
   }
 
@@ -134,9 +147,9 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     final newConf = Map<int, int>.from(state.termConfidence);
     final current = newConf[termId] ?? 0;
     if (correct) {
-      newConf[termId] = (current + 1).clamp(0, 3);
+      newConf[termId] = (current + 1).clamp(0, AppConstants.maxConfidence);
     } else {
-      newConf[termId] = (current - 1).clamp(0, 3);
+      newConf[termId] = (current - 1).clamp(0, AppConstants.maxConfidence);
     }
 
     final newWrong = Set<int>.from(state.wrongTermIds);
@@ -146,9 +159,15 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
       newWrong.remove(termId);
     }
 
+    // Update SRS next review date
+    final newReviewDates = Map<int, DateTime>.from(state.nextReviewDates);
+    final interval = StudyProgress.srsInterval(newConf[termId]!);
+    newReviewDates[termId] = DateTime.now().add(interval);
+
     state = state.copyWith(
       termConfidence: newConf,
       wrongTermIds: newWrong,
+      nextReviewDates: newReviewDates,
     );
     await _saveToPrefs();
   }
@@ -167,7 +186,7 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     // Update confidence + add to review in one state change (single save)
     final newConf = Map<int, int>.from(state.termConfidence);
     final current = newConf[termId] ?? 0;
-    newConf[termId] = (current - 1).clamp(0, 3);
+    newConf[termId] = (current - 1).clamp(0, AppConstants.maxConfidence);
 
     final newWrong = Set<int>.from(state.wrongTermIds)..add(termId);
     final newReview = {...state.reviewTermIds, termId};
@@ -219,6 +238,7 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
     await _prefs.remove(SPKeys.wrongTermIds);
     await _prefs.remove(SPKeys.todayLearnedCount);
     await _prefs.remove(SPKeys.todayDate);
+    await _prefs.remove('next_review_dates');
   }
 
   Future<void> _saveToPrefs() async {
@@ -254,5 +274,11 @@ class ProgressNotifier extends StateNotifier<StudyProgress> {
       (k, v) => MapEntry(k.toString(), v),
     );
     await _prefs.setString(SPKeys.termConfidence, json.encode(confMap));
+
+    // Save next review dates
+    final reviewDatesMap = state.nextReviewDates.map(
+      (k, v) => MapEntry(k.toString(), v.toIso8601String()),
+    );
+    await _prefs.setString('next_review_dates', json.encode(reviewDatesMap));
   }
 }

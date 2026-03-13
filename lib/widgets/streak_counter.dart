@@ -10,40 +10,42 @@ class StreakCounter extends StatelessWidget {
   Widget build(BuildContext context) {
     final isActive = streak > 0;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.sm,
-        vertical: Spacing.xs,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: isActive
-              ? AppColors.warning.withValues(alpha: 0.4)
-              : AppColors.cardBorder,
+    return Semantics(
+      label: '연속 학습 $streak일',
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.sm,
+          vertical: Spacing.xs,
         ),
-        borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
-        color: isActive ? AppColors.warning.withValues(alpha: 0.08) : null,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.local_fire_department,
-            size: 14,
-            color: isActive ? AppColors.warning : AppColors.textMuted,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isActive
+                ? AppColors.warning.withValues(alpha: 0.4)
+                : AppColors.cardBorder,
           ),
-          const SizedBox(width: Spacing.xs),
-          Text(
-            '${streak}D',
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isActive ? AppColors.warning : AppColors.textMuted,
-              letterSpacing: 1,
+          borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+          color: isActive ? AppColors.warning.withValues(alpha: 0.08) : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ExcludeSemantics(
+              child: Icon(
+                Icons.local_fire_department,
+                size: 14,
+                color: isActive ? AppColors.warning : AppColors.textMuted,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: Spacing.xs),
+            Text(
+              '${streak}D',
+              style: AppTextStyles.mono.copyWith(
+                fontWeight: FontWeight.w700,
+                color: isActive ? AppColors.warning : AppColors.textMuted,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
